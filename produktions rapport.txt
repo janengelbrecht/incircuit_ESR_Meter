@@ -1,0 +1,388 @@
+==============================================================================================================================
+|                                                                                                                             |
+|                    Produktionsrapport for In-Circuit ESR-Meter                                                              |
+|                                                                                                                             |
+==============================================================================================================================
+| DOKUMENT ID:  PROD-ESR-MIL-001                                                                                             |
+| DATO:         [Indsæt dato]                                                                                                 |
+| VERSION:      1.00                                                                                                          |
+| SYSTEM:       IN-CIRCUIT ESR METER                                                                                         |
+| FORFATTER:    [Dit navn]                                                                                                    |
+==============================================================================================================================
+| REFERENCER:   SRS-ESR-MIL-001, HWKONS-ESR-MIL-001, PCB-ESR-MIL-001, MEC-ESR-MIL-001                                        |
+==============================================================================================================================
+
+==============================================================================================================================
+§1. Præcis sammenfatning
+==============================================================================================================================
+Denne rapport dokumenterer den komplette produktionsproces for In-Circuit ESR-meteret, fra råmaterialer til færdigpakket produkt.
+Rapporten specificerer produktionsprocesser, værktøjer, maskiner, arbejdsgang, kvalitetskontrol og logistik i overensstemmelse 
+med industrielle standarder (IPC-A-610, ISO 9001, RoHS, REACH). Produktionen er opdelt i fire hovedfaser: PCB-produktion, 
+PCB-montage, apparatkasseproduktion og endelig samling/test. Rapporten implementerer alle P-krav fra kravspecifikationen.
+==============================================================================================================================
+
+==============================================================================================================================
+§2. Produktionsorganisation og Overblik
+==============================================================================================================================
+2.1 Produktionsfaser og Flow
+------------------------------------------------------------------------------------------------------------------------------
+Fase 1: PCB-produktion (Ekstern leverandør)
+Fase 2: PCB-montage (SMT + THT)
+Fase 3: Apparatkasseproduktion (Sprojsestøbning og efterbehandling)
+Fase 4: Endelig samling og test
+Fase 5: Pakning og lagring
+
+2.2 Produktionsfaciliteter og Kapacitet
+------------------------------------------------------------------------------------------------------------------------------
+Produktionssted: [Navn på fabrik/leverandør]
+Fabriksareal: 500 m² (ISO 8 renrumsstandard for montage)
+Månedlig kapacitet: 500 enheder (én skift)
+Arbejdsskift: 1×8 timer, 5 dage/uge
+Medarbejdere: 3 tekniske operatører, 1 kvalitetstekniker
+
+2.3 Dokumentations- og Sporbarhedssystem
+------------------------------------------------------------------------------------------------------------------------------
+• ERP-system: SAP Business One
+• Sporbarhed: Unikt serienummer på hver enhed (ESR-XXXX-YYYY)
+• Dokumentation: Digital travler (traveler) med QR-kode for hver enhed
+• Revision: Konfigurationsstyring ved brug af PDM-system
+==============================================================================================================================
+
+==============================================================================================================================
+§3. Delproduktionsprocesser
+==============================================================================================================================
+3.1 PCB-produktion (P.PCB.001)
+------------------------------------------------------------------------------------------------------------------------------
+3.1.1 Processkridt og Maskiner:
+1.  Materiale forberedelse: FR-4 1,6mm, 1oz kobber, ENIG finish
+2.  Fotolitografi: ORC 850DS direkte billedeexponering (LDI)
+3.  Ætsning: Atotech horisontal ætelinje (kobber, tin)
+4.  Lagdeling og laminering: Vacuum presse ved 180°C
+5.  Borning: CNC boremaskine (0,3mm - 3,2mm diametre)
+6.  Metallisering: Elektrolytisk kobberfyld af viaer
+7.  Loddemaskebelægning: Siebdruck LPI grøn
+8.  Silkskrift: Automatisk silketrykmaskine (hvid tekst)
+9.  Konturfræsning: CNC fræsemaskine med automatiskt vakuumhold
+10. Elektrisk test: Flying probe test (ATG 1000 series)
+
+3.1.2 Kvalitetskriterier:
+•   Trace/space: 0,2mm/0,2mm (IPC-2221A)
+•   Via fyldning: >80% (IPC-6012)
+•   Loddemasketykkelse: 25-35µm
+•   Sølvmaskering: 100% dækning af udsat kobber
+•   Elektrisk test: 100% af boards, 0% tolererede åbne/korte nets
+
+3.2 PCB-montage (P.ASS.001)
+------------------------------------------------------------------------------------------------------------------------------
+3.2.1 SMT-montage (Overflademonterede komponenter):
+1.  Stenciling: 0,1mm tyk stencil, laser-cut, ø45µm apertures
+2.  Loddepasta print: DEK Horizon 03i, automatisk vision alignment
+3.  Komponentplacering: Fuji NXT III pick-and-place, 25.000 komponenter/time
+4.  Genflowlødning: Heller 1800N reflow oven, 8-zoner, nitrogen atmosfære
+    • Profil: Forvarm 150°C/60s, spike 245°C (peak), 60s over 217°C
+5.  AOI inspektion: Koh Young 3D AOI, kontrol af komponentpresence, polaritet, loddefejl
+
+3.2.2 THT-montage (Gennemhulls-komponenter):
+1.  Manuel indsætning: Operationsforstærkere (DIP14), stiftsøjler, USB-C connector
+2.  Bølgelødning: Electrovert bølgelodningsmaskine, dobbelt bølge
+    • Flux: Rosin-mild (ROL0), forvarm 100°C, bølgetemperatur 260°C, kontakt 3s
+3.  Manuel efterlødning: Kun for komponenter som ikke kan bølgeloddes
+4.  Rensing: Aqueous rensemiddel, ultralyd, deioniseret vand, lufttørring
+
+3.2.3 Montagekvalitetsstandarder:
+•   Visuel inspektion: IPC-A-610 klasse 2 standard
+•   Loddefejlrate: <100 ppm (0,01%)
+•   Komponentjustering: ±50% af pad bredde (IPC-610)
+•   Loddemængde: 25-75% af komponenthøjde eller lead diameter
+
+3.3 Apparatkasseproduktion
+------------------------------------------------------------------------------------------------------------------------------
+3.3.1 Sprojsestøbning (MEC-ESR-MIL-001):
+1.  Materiale: ABS granulat (UL94-V0), tørret ved 80°C i 4 timer
+2.  Værktøj: 2-cavities aluminiumsforme, vandkølet
+3.  Maskine: Arburg Allrounder 570S, 200 tons låsekraft
+4.  Parametre: Smeltetemperatur 240°C, formtryk 800 bar, køletid 30s
+5.  Efterbehandling: Automatisk afgasing, manuel kantafretning
+6.  Dekoration: Laser marking (logo, model, serienummer)
+
+3.3.2 EMI-Afskærmningsapplikation:
+1.  Metode: Konduktiv sprøjtbelægning (grafitebaseret)
+2.  Udstyr: Automatisk sprøjteboks, 0,5mm dyse
+3.  Tørring: Konvektionsovn, 60°C i 15 minutter
+4.  Resistivitet: <1 Ω/□ målt med 4-point probe
+
+3.3.3 Underleverandørstyring:
+•   Stiftsøjler og hardware: Certificeret leverandør (ISO 9001)
+•   Gummiunderlag: Silikone, fra RoHS-certificeret leverandør
+•   Logovalidering: Første artikel inspektion (FAI) for hver batch
+
+3.4 Apparatfærdigmontering
+------------------------------------------------------------------------------------------------------------------------------
+3.4.1 Samlingslinje og Arbejdsstationer:
+Station 1: PCB-kontrol og forberedelse
+Station 2: Interne kabler montering (LCD-flex, probekabler)
+Station 3: PCB montering i bunddel
+Station 4: Topmontering og skruefastgørelse
+Station 5: Fodmontering og funktionstest
+Station 6: Endelig inspektion og rens
+
+3.4.2 Monteringssekvens (DETAILERET):
+1.  PCB forberedelse: Installer stiftsøjler (4x M3x10mm) med møtrikker
+2.  Kabler: Lod LCD-flexkabel til PCB, lod probekabler til Kelvin-socket
+3.  Indbygning: Placer PCB i bunddel, fastgør med 4x M3x6mm skruer
+4.  Topmontering: Placer topdel, fastgør med 4x M3x6mm skruer (2Nm moment)
+5.  Fodmontering: Monter foldbar fod, test funktion
+6.  Rensing: Fjern fingeraftryk og støv med IPA og luftpistol
+
+3.4.3 Værktøjer og Udstyr:
+•   Momentskruetrækkere: 2Nm kalibreret (Wera 744)
+•   ESD-udstyr: ESD-bånd, ESD-måtter, ioniserende luftpistol
+•   Loddeudstyr: Temperaturkontrolleret loddekolbe (JBC)
+•   Mekanisk værktøj: Specialværktøj til fodmontering
+==============================================================================================================================
+
+==============================================================================================================================
+§4. Produktionstests og Kvalitetskontrol
+==============================================================================================================================
+4.1 In-Circuit Test (ICT) - P.TST.001.1
+------------------------------------------------------------------------------------------------------------------------------
+4.1.1 Teststrategi:
+•   Testmetode: Flying probe test (bed-of-nails for pilotserie)
+•   Dækning: 95% af nets (alle kritiske analoge og digitale signaller)
+•   Testpunkter: TP1-TP11 fra PCB-layout + strømforsyningspunkter
+
+4.1.2 Testprogram og Parametre:
+Test #  Testpunkt             Forventet Værdi           Tolerance        Fejlmode
+1       +3.3V rail            3.3V                     ±5%              Kort/åbent
+2       -5V rail              -5.0V                    ±10%             Kort/åbent
+3       AGND-DGND modstand    <1Ω                      -                Ground løkke
+4       Kelvin socket kont.   <0.5Ω                    -                Åben forbindelse
+5       I2C kommunikation     ACK fra ADS1115          -                Kommunikationsfejl
+6       DDS output frekvens   100 kHz                  ±100 ppm         DDS fejl
+
+4.1.3 Testudstyr:
+•   Flying probe tester: SPEA 4040
+•   Software: SPEA TESTWAY
+•   Fixture: Universal adapter med pogo pins
+
+4.2 Apparattest (Funktionstest) - P.TST.001.2
+------------------------------------------------------------------------------------------------------------------------------
+4.2.1 Testopstilling og Periferi:
+•   Referencemodstande: 0,01Ω, 0,1Ω, 1Ω, 10Ω (0,1% præcision)
+•   Strømforsyning: Laboratoriestandard 5V USB-forsyning
+•   PC interface: Automatiseret testsoftware via USB-C
+•   Testfixture: 4-leder Kelvin-fixture med guldplatede kontakter
+
+4.2.2 Testsekvens (Automatiseret):
+1.  Power-on selvtest: Verificer alle hardwaremoduler (DDS, ADC, LCD)
+2.  Signalvalidering: Mål 100 kHz testsignal amplitude (skal være 0,1V p-p ±5%)
+3.  Referencemodstandsmåling: Mål alle 4 referencemodstande
+4.  Linearity test: Mål 10 punkter mellem 0,01Ω og 10Ω
+5.  Display test: Vis alle tegn på LCD
+6.  Knaptest: Verificer begge knappers funktionalitet
+7.  SCPI kommunikation: Send *IDN? og verificer respons
+
+4.2.3 Acceptkriterier:
+•   Nøjagtighed: ≤5% af målte værdi over hele området (H.PRC.002)
+•   Opløsning: 1 mΩ verificeret (H.PRC.001)
+•   Signal amplitude: 0,1V p-p ±5% (H.SIG.001)
+•   Testcyklustid: <2 minutter per enhed
+
+4.3 Stikprøver og Statistisk Proceskontrol (SPC)
+------------------------------------------------------------------------------------------------------------------------------
+4.3.1 Stikprøveplan (AQL Niveau II):
+•   Lot størrelse: 50-500 enheder
+•   Stikprøvestørrelse: 20 enheder
+•   Accepttal (Ac): 1 (mindre fejl), 0 (kritisk fejl)
+•   Rejektionstal (Re): 2 (mindre fejl), 1 (kritisk fejl)
+
+4.3.2 Kvalitetsindikatorer (KPI'er):
+•   Førstegangsudbytte (FTY): >95%
+•   Samlet udbytte: >98%
+•   Kundenklager: <2% per år
+•   Gennemsnitlig tid mellem fejl (MTBF): >10.000 timer
+
+4.3.3 Fejlklassifikation og Håndtering:
+Kritisk fejl (0-tolerance): Forkert testsignal (>0,15V), livsfarlig fejl
+Hovedfejl (AQL 0,65%): Nøjagtighed >10%, display fejl, ikke-fungerende USB
+Mindre fejl (AQL 2,5%): Kosmetiske fejl, mindre kassefejl, støv under display
+==============================================================================================================================
+
+==============================================================================================================================
+§5. Pakning, Lager og Logistik
+==============================================================================================================================
+5.1 Pakningsspecifikationer (E.EMB.001)
+------------------------------------------------------------------------------------------------------------------------------
+5.1.1 Indre emballage:
+•   Materiale: ESD-sikker anti-statisk pose (silver-in)
+•   Cushioning: Skumindsats præcisionsstøbt til apparatform
+•   Dokumentation: Brugervejledning, kalibreringscertifikat, USB-kabel
+•   Silicagel: 5g tørremiddel i permeable pose
+
+5.1.2 Ydre emballage:
+•   Karton: B-flute, 200# test, dimensioner 200x150x80mm
+•   Mærkning: ESD-symbol, "Fragile", "Keep Dry", produktinformation
+•   Pallering: 24 enheder per kasse, 8 kasser per palle (192 enheder)
+•   Pallemærkning: Strøkkode, vægt (150kg), produktionsdato
+
+5.1.3 Pakningsproces:
+1.  Apparattest og rensning
+2.  Placer i ESD-pose med silicagel
+3.  Indsæt i skumindsats
+4.  Tilføj dokumentation og tilbehør
+5.  Luk og mærk indre emballage
+6.  Pak i karton med top- og bundfyld
+7.  Pallegrening og plastikomslutning
+
+5.2 Lagerstyring og Miljøkontrol (E.STO.001)
+------------------------------------------------------------------------------------------------------------------------------
+5.2.1 Lagerfaciliteter:
+•   Temperatur: 15-25°C (H.LIM.003)
+•   Luftfugtighed: 40-60% RH
+•   ESD-kontrol: <100V statisk potentiale på alle overflader
+•   Sikkerhed: Adgangskontrol, brandalarm, overvågning
+
+5.2.2 Lagerprocesser:
+•   FIFO (First-In-First-Out): Automatisk ved brug af strøkkodescanning
+•   Lagertid: Maksimalt 6 måneder før yderligere kalibrering
+•   Genoptagelse: Visuel inspektion og strømtjek efter lang lagring
+•   Dokumentation: Digital lagerstyring med realtids opdatering
+
+5.3 Logistik og Distribution (E.TRA.001)
+------------------------------------------------------------------------------------------------------------------------------
+5.3.1 Transportforhold:
+•   Temperatur: -20°C til +70°C under transport
+•   Håndtering: Maksimalt 1,5g acceleration, ingen direkte sollys
+•   Forsikring: Fuldt dækket for transportskader
+•   Sporbarhed: GPS-sporing for hele leveringskæden
+
+5.3.2 Distributionskanaler:
+•   Direkte salg: Forskudt betaling, leveringstid 5-10 hverdage
+•   Distributører: 3 regionale distributører i EU
+•   Eksport: CE-mærkning, RoHS/REACH dokumentation, toldangivelser
+==============================================================================================================================
+
+==============================================================================================================================
+§6. Kvalitets- og Miljøstandarder
+==============================================================================================================================
+6.1 Kvalitetsstyringssystem (ISO 9001:2015)
+------------------------------------------------------------------------------------------------------------------------------
+•   Certificering: Fabrikken er ISO 9001 certificeret
+•   Dokumentkontrol: Revisionskontrolleret dokumentation
+•   Korrigerende foranstaltninger: 8D rapport for gentagne fejl
+•   Forbyggende foranstaltninger: FMEA på alle processer
+
+6.2 Miljøstandarder (E.ENV.001)
+------------------------------------------------------------------------------------------------------------------------------
+6.2.1 Materialeoverholdelse:
+•   RoHS: Alle komponenter dokumenteret RoHS-kompatible
+•   REACH: Ingen SVHC-stoffer over 0,1% vægtprocent
+•   WEEE: Registreret som kategori 3, produktnummer DK123456
+•   Konfliktmineraler: Due diligence for tantal, tin, wolfram, guld
+
+6.2.2 Affaldshåndtering:
+•   Elektronikaffald: Adskilt indsamling til certificeret genvinder
+•   Kemikalier: Registreret og behandlet efter lovkrav
+•   Emballage: Minimum 80% genanvendelig karton
+•   Energiforbrug: Overvåget med mål om 5% reduktion årligt
+
+6.3 Arbejdsmiljø og Sikkerhed
+------------------------------------------------------------------------------------------------------------------------------
+•   ESD: Alle arbejdsstationer ESD-sikrede, regelmæssige test
+•   Kemikaliehåndtering: SDS tilgængeligt for alle kemikalier
+•   Personlig beskyttelsesudstyr: Obligatorisk for alle operatører
+•   Uddannelse: Årlig opkvalificering for alle produktionsmedarbejdere
+==============================================================================================================================
+
+==============================================================================================================================
+§7. Dokumentation og Sporbarhed
+==============================================================================================================================
+7.1 Produktionsdokumentation
+------------------------------------------------------------------------------------------------------------------------------
+7.1.1 Obligatorisk dokumentation per enhed:
+•   Travler (traveler): Papir eller digital med alle testresultater
+•   Kalibreringscertifikat: Dato, referencemodstandsværdier, operatør
+•   Serienummeroversigt: Kobling mellem serienummer og komponentlots
+•   Testrapporter: ICT, funktionstest, visuel inspektion
+
+7.1.2 Batch-dokumentation:
+•   Certifikat af konformitet (CoC): For hver produktionsbatch
+•   Materialecertifikater: For kritiske komponenter (præcisionsmodstande)
+•   Procesvalideringsrapporter: For hver procesændring
+•   Statistik rapporter: Månedlige KPI-rapporter
+
+7.2 Sporbarhedssystem (P.QUAL.001.3)
+------------------------------------------------------------------------------------------------------------------------------
+7.2.1 Serienummerkonvention: ESR-[ÅÅMM]-[0001-9999]
+7.2.2 Dataopsamling: Automatisk indsamling af alle testresultater
+7.2.3 Arkivering: Digitale arkiver med 10 års opbevaring
+7.2.4 Tilbagekaldelsesprocedurer: Klart defineret for hver enhedsklasse
+
+7.3 Kravspecifikation Overholdelse
+------------------------------------------------------------------------------------------------------------------------------
+•   P-krav: Alle produktionskrav (P.xxx.xxx) implementeret og verificeret
+•   Traceability Matrix: Kobling mellem krav og procesdokumentation
+•   Revisionshistorie: Dokumenteret for alle produktionsinstruktioner
+==============================================================================================================================
+
+==============================================================================================================================
+§8. Epistemiske Begrænsninger
+==============================================================================================================================
+•   Leverandørafhængighed: Nogle komponenter (TS3V902) har lange leveringstider
+•   Procesvariation: Sprojsestøbning kan have ±0,2mm variation
+•   Kalibreringsinterval: Referencemodstande kræver årlig rekalibrering
+•   Skalerbarhed: Nuværende setup maksimeret ved 500 enheder/måned
+•   Testdækning: Flying probe test dækker ikke 100% af fejlmoder
+==============================================================================================================================
+
+==============================================================================================================================
+§9. Konklusion og Opsummering
+==============================================================================================================================
+9.1 Kravopfyldelse Opsummering
+------------------------------------------------------------------------------------------------------------------------------
+•   P.PCB.001 (PCB-produktion): ✓ Implementeret med 100% elektrisk test
+•   P.ASS.001 (Sammensætning): ✓ IPC-A-610 klasse 2 standard
+•   P.TST.001 (Produktionstest): ✓ ICT + funktionstest på 100% af enheder
+•   P.QUAL.001 (Kvalitet): ✓ Fejlrate <1%, fuld sporbarhed
+•   E-krav (Miljø): ✓ RoHS, REACH, WEEE overholdelse
+
+9.2 Produktions Performance Forventninger
+------------------------------------------------------------------------------------------------------------------------------
+•   Takt tid: 5 minutter per enhed i fuld produktion
+•   Udbudt kapacitet: 500 enheder/måned (én skift)
+•   Samlet udbytte: >98% fra råmaterialer til færdig produkt
+•   Levetid i produktion: 5 år uden større værktøjsinvestering
+
+9.3 Kontinuerlig Forbedring
+------------------------------------------------------------------------------------------------------------------------------
+•   Lean manufacturing: 5S på alle arbejdsstationer
+•   Six Sigma: DMAIC for fejlreduktion
+•   Supplier development: Samarbejde med leverandører om kvalitetsforbedring
+•   Teknologiopdatering: Evaluering af automatiseret optisk inspektion (AOI)
+==============================================================================================================================
+
+==============================================================================================================================
+§10. Bilag og Reference
+==============================================================================================================================
+10.1 Referencemateriale
+------------------------------------------------------------------------------------------------------------------------------
+•   IPC-A-610: Acceptability of Electronic Assemblies
+•   IPC-J-STD-001: Requirements for Soldered Electrical and Electronic Assemblies
+•   ISO 9001:2015: Quality Management Systems
+•   RoHS Directive 2011/65/EU
+•   REACH Regulation EC 1907/2006
+
+10.2 Kontaktinformation
+------------------------------------------------------------------------------------------------------------------------------
+•   Produktionsleder: [Navn, Tlf., Email]
+•   Kvalitetsansvarlig: [Navn, Tlf., Email]
+•   Leverandørkontakter: Liste over primære leverandører
+•   Nødstednummer: For produktionsstoppende problemer
+
+10.3 Godkendelseshistorik
+------------------------------------------------------------------------------------------------------------------------------
+Godkendt af:                      Dato:                       Underskrift:
+Produktionsleder                  [Dato]                      ________________
+Kvalitetschef                     [Dato]                      ________________
+Projektleder                      [Dato]                      ________________
+==============================================================================================================================

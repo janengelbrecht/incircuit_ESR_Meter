@@ -1,0 +1,633 @@
+==============================================================================================================================
+|															     |
+|				    Kravspecifikation for In-Circuit ESR-meter  					     |
+|															     |
+==============================================================================================================================
+| DOKUMENT ID:	SRS-ESR-MIL-001												     |
+| DATO:		19-01-25												     |
+| VERSION:	1.00													     |
+| SYSTEM:	INCIRCUIT ESR METER											     |
+| FORFATTER:	Jan Engelbrecht Pedersen										     |
+==============================================================================================================================
+
+==============================================================================================================================
+§1. Præcis sammenfatning
+==============================================================================================================================
+Dette dokument specificerer konstruktionskrav til et professionelt in-circuit ESR-meter til hobbybrug med komplet 
+klassificering af hardware-, software-, dokumentations-, test- og produktionskrav. 
+Systemet måler ESR i elektrolytkondensatorer (0-10 Ω, 1 mΩ opløsning) ved 100 kHz med maksimalt 0,1V signal for sikker 
+in-circuit operation. Hardwaren implementeres med rail-to-rail low voltage opamps, AD9850 DDS-generator, Kelvin-prober, 
+Schottky-dioder i superdiode-kredsløb, ADS1115 ADC, 2-lags PCB med EMI/EMC/ESD-beskyttelse, 
+og switched capacitor negativ forsyning. 
+Firmwaren inkluderer watchdog-timer og implementeres i Arduino C++ med SCPI-protokol.
+==============================================================================================================================
+§2. Definitioner og præcisering
+==============================================================================================================================
+------------------------------------------------------------------------------------------------------------------------------
+2.1 Formelle definitioner
+------------------------------------------------------------------------------------------------------------------------------
+H.ESR.001: ESR (Equivalent Series Resistance): Effektiv serie-modstand i elektrolytkondensator ved 100 kHz frekvens
+
+H.MET.001: In-circuit måling: Måling udført uden afsondring fra kredsløb med <0,1V testsignal
+
+H.SIG.001: Testfrekvens: 100 kHz sinussignal med maksimal amplitude 0,1V peak-to-peak
+
+H.PRC.001: Opløsning: 1 mΩ (mindste målbare ændring)
+
+H.PRC.002: Præcision: ≤5% af målte værdi over 0-10 Ω område
+------------------------------------------------------------------------------------------------------------------------------
+2.2 Antagelser og begrænsninger
+------------------------------------------------------------------------------------------------------------------------------
+H.LIM.001: Måleobjekt: Elektrolytkondensatorer i aktive/passive kredsløb
+
+H.LIM.002: Signalbegrænsning: ≤0,1V for at undgå halvlederaktivering
+
+H.LIM.003: Temperaturområde: 15-25°C (ingen kompensation)
+
+S.LIM.001: Kalibrering: Kræver genprogrammering af firmware
+------------------------------------------------------------------------------------------------------------------------------
+2.3 Klassifikationssystem
+------------------------------------------------------------------------------------------------------------------------------
+H: Hardwarekrav (H.xxx.xxx)
+
+S: Softwarekrav (S.xxx.xxx)
+
+D: Dokumentationskrav (D.xxx.xxx)
+
+T: Testkrav (T.xxx.xxx)
+
+P: Produktionskrav (P.xxx.xxx)
+==============================================================================================================================
+§3. Detaljerede konstruktionskrav
+==============================================================================================================================
+------------------------------------------------------------------------------------------------------------------------------
+3.1 Hardwarekonstruktionskrav
+------------------------------------------------------------------------------------------------------------------------------
+H.GEN.001: DDS-generator
+Komponent: AD9850 125 MHz DDS synthesizer
+
+Konfiguration: 100 kHz ren sinus, 0° fase
+
+Frekvensstabilitet: <100 ppm
+
+Interface: Parallelt eller serielt (konfigurerbart)
+
+Forsyning: 5V ±5%
+
+H.GEN.002: Buffer og attenuator
+Buffer: Rail-to-rail opamp i voltage follower
+
+Potentiometer: Multiturn præcisions, 10-omdrejninger
+
+Maksimal udgang: 0,1V p-p ved testprobene
+
+H.CPL.001: AC-kobling og spændingsdeler
+Koblingskondensator: 10 µF lav-ESR, 50V minimum
+
+Præcisionsmodstand: 10 Ω ±0,1%, <50 ppm/°C
+
+Kelvin-tilslutning: Fire separate ledere til DUT
+
+H.AMP.001: Differentialforstærker
+Forstærkning: 47x ±0,5%
+
+Opamp: Rail-to-rail, lavstøj, CMRR >90 dB @ 100 kHz
+
+Båndbredde: ≥1 MHz ved forstærkning 47
+
+Indgangsimpedans: ≥10 MΩ
+
+H.REC.001: Præcisionsensretter
+Topologi: Superdiode med to rail-to-rail opamps
+
+Dioder: Schottky-dioder (1N5817 eller tilsvarende)
+
+Spændingsfald: <15 mV @ 100 kHz
+
+Linearitet: >99,9% over dynamisk område
+
+H.FLT.001: Lavpasfilter
+Type: 3. ordens Sallen-Key Butterworth aktivt filter
+
+Cutoff-frekvens (fc): 100 Hz ±1%
+
+Stopband-frekvens (fs): 10 kHz
+
+Stopband-dæmpning: ≥40 dB @ 10 kHz
+
+Opamp: Rail-to-rail, lav offset (<1 mV)
+
+DC-output ripple: <500 µV RMS
+
+Komponentværdier (beregnet ud fra specifikationer):
+
+R1 = R2 = R3 = 1,59 kΩ (1% tolerance)
+
+C1 = 1 µF, C2 = 100 nF, C3 = 10 nF (filmkondensatorer)
+
+H.ADC.001: Analog-til-digital konvertering
+Konverter: ADS1115 16-bit ΔΣ ADC
+
+PGA-indstillinger: 4x, 8x, 16x forstærkning
+
+Reference: Intern 2,048V ±0,05%
+
+Interface: I2C @ 400 kHz
+
+Sample rate: 860 SPS maksimum
+
+H.MCU.001: Mikrokontroller og periferi
+Processor: ESP32-WROOM-32
+
+Display: 16x2 LCD med I2C backpack (Adafruit kompatibel)
+
+Knapper: 2x taktile med intern pull-up
+
+Seriel interface: USB-C til seriel konverter
+
+H.PWR.001: Strømforsyningssystem
+H.PWR.001.1: Input: USB-C 5V @ 500 mA minimum
+
+H.PWR.001.2: Hovedregulator: 3,3V LDO @ 300 mA (ESP32, opamps, ADS1115)
+
+H.PWR.001.3: Negativ forsyning: Switched capacitor konverter 
+(ICL7660 eller tilsvarende) genererer -5V til opamps
+
+H.PWR.001.4: Levelkonverter: Bidirektionel 3,3V↔5V til AD9850 kommunikation
+
+H.PWR.001.5: Decoupling: 100 nF keramisk + 10 µF tantal ved hver IC
+
+H.PWR.001.6: AGND/DGND: Separate stjerner med enkelt forbindelsespunkt
+
+H.PCB.001: Printpladedesign
+H.PCB.001.1: Lag: 2-lags FR-4, 1,6 mm tykkelse
+
+H.PCB.001.2: Spor/rum: Minimum 0,2 mm/0,2 mm for signal
+
+H.PCB.001.3: Masseplaner: Komplet masseplan på begge sider
+
+H.PCB.001.4: EMI-beskyttelse: Gardering omkring analoge signaler
+
+H.PCB.001.5: ESD-beskyttelse: TVS-dioder på alle eksterne forbindelser
+
+H.PCB.001.6: Routing: Analog og digital separation med 5 mm minimum afstand
+
+H.PCB.001.7: Probeforbindelser: Gulvstående 4-pol Kelvin-socket
+
+H.MEC.001: Mekanisk design
+H.MEC.001.1: Kabinet: ABS plast med EM-afskærmning
+
+H.MEC.001.2: Prober: 4x isolerede kelvin-prober med spidse tip
+
+H.MEC.001.3: Køling: Naturlig konvection - ingen aktive elementer
+
+H.MEC.001.4: Dimensioner: Maksimalt 100x150x50 mm
+------------------------------------------------------------------------------------------------------------------------------
+3.2 Softwarekonstruktionskrav
+------------------------------------------------------------------------------------------------------------------------------
+S.ARC.001: Overordnede arkitekturkrav
+S.ARC.001.1: Sprog: Arduino C++ (C++14 kompatibel)
+
+S.ARC.001.2: Udviklingsmiljø: Arduino IDE 2.x eller PlatformIO
+
+S.ARC.001.3: Paradigme: Struktureret programmering (ingen klasser)
+
+S.ARC.001.4: Filstruktur: En .ino fil med alle moduler
+
+S.ARC.001.5: Hukommelse: Statisk allokering, ingen malloc/free
+
+S.HAL.001: Hardware Abstraction Layer
+S.HAL.001.1: hal_ad9850: DDS-kontrol (frekvens, amplitude, fase)
+
+S.HAL.001.2: hal_ads1115: ADC-læsning og PGA-kontrol
+
+S.HAL.001.3: hal_lcd: LCD-display via I2C (Adafruit-bibliotek)
+
+S.HAL.001.4: hal_buttons: Knapaflæsning med debounce (statemaskine)
+
+S.HAL.001.5: hal_serial: Seriel kommunikationsinitialisering
+
+S.ADC.001: ADC-målingssystem
+S.ADC.001.1: adc_read_single(): Enkeltmåling med specificeret PGA
+
+S.ADC.001.2: adc_read_oversampled(): 64x oversampling + middling
+
+S.ADC.001.3: adc_auto_range(): Automatisk PGA-valg baseret på signalstyrke
+
+S.ADC.001.4: adc_calibrate(): Kalibreringsrutine (kræver genprogrammering)
+
+S.ESR.001: ESR-beregningsmodul
+S.ESR.001.1: Datastruktur: ESR_tables[3][30] i PROGMEM
+
+S.ESR.001.2: esr_get_table_index(): Returner tabel baseret på PGA
+
+S.ESR.001.3: esr_interpolate(): Lineær interpolation mellem tabelværdier
+
+S.ESR.001.4: esr_calculate(): Hovedberegningsfunktion med validering
+
+S.DSP.001: Display og brugergrænseflade
+S.DSP.001.1: Tilstande: STATE_RAW_ADC og STATE_ESR_RESULT
+
+S.DSP.001.2: display_init(): LCD-initialisering
+
+S.DSP.001.3: display_raw_adc(): Vis rå ADC-værdier til kalibrering
+
+S.DSP.001.4: display_esr_result(): Vis ESR, PGA og ADC-værdi
+
+S.DSP.001.5: display_update(): Opdater baseret på tilstand
+
+S.SCP.001: SCPI-kommunikationsmodul
+S.SCP.001.1: Kommandoer: *IDN?, MEASure:ESR?, SYSTem:PRESet, DISPlay:MODE, 
+             SYSTem:COMMunication
+
+S.SCP.001.2: scpi_parser(): Parse indkommende kommandoer
+
+S.SCP.001.3: scpi_execute(): Udfør kommandoer
+
+S.SCP.001.4: scpi_response(): Send svar (maks. 100 ms respons)
+
+S.WDG.001: Watchdog og fejlhåndtering
+S.WDG.001.1: Hardware watchdog: ESP32 indbygget watchdog (timeout 3 sekunder)
+
+**S.WDG.001.2:wdg_reset(): Reset watchdog i main loop
+
+S.WDG.001.3: Fejllogging: Log fejl til seriel port med tidsstempel
+
+S.WDG.001.4: System reset: Automatisk reset ved kritisk fejl
+
+S.PER.001: Ydeevnekrav
+S.PER.001.1: Målecyklus: ≤100 ms (inklusive oversampling)
+
+S.PER.001.2: Display opdatering: ≤50 ms
+
+S.PER.001.3: SCPI respons: ≤10 ms for enkelte kommandoer
+
+S.PER.001.4: Knaprespons: ≤20 ms
+------------------------------------------------------------------------------------------------------------------------------
+3.3 Dokumentationskrav
+------------------------------------------------------------------------------------------------------------------------------
+D.GEN.001: Generel dokumentation
+D.GEN.001.1: Tekstsprog: Formfuldendt dansk med korrekt retskrivning
+
+D.GEN.001.2: Struktur: Logisk opdeling i afsnit med nummerering
+
+D.COD.001: Kodedokumentation
+D.COD.001.1: Linjekommentarer: Alle kodelinier efterfølges af //-kommentar
+
+D.COD.001.2: Funktionskommentarer: Doxygen-formateret blok før hver funktion
+
+D.COD.001.3: Modulbeskrivelse: Kommentarblok i hvert moduls start
+
+D.COD.001.4: Variabeldokumentation: Alle globale variabler dokumenteres
+
+D.DOX.001: Doxygen-specifikke krav
+D.DOX.001.1: Bruge alle relevante Doxygen-kommandoer: @brief, @param, @return, @note, @warning, @see
+
+D.DOX.001.2: Generere HTML og PDF dokumentation
+
+D.DOX.001.3: Inkludere flowdiagrammer for komplekse algoritmer
+
+D.TEC.001: Teknisk dokumentation
+D.TEC.001.1: Skematisk diagram: Fuldt annoteret med komponentværdier
+
+D.TEC.001.2: BOM: Komplet komponentliste med leverandøroplysninger
+
+D.TEC.001.3: PCB-layout: Alle lag vises med annotations
+
+D.TEC.001.4: Kalibreringsvejledning: Trin-for-trin procedure
+------------------------------------------------------------------------------------------------------------------------------
+3.4 Testkrav
+------------------------------------------------------------------------------------------------------------------------------
+T.UNT.001: Modultests
+T.UNT.001.1: HAL-moduler: Test hver driver isoleret
+
+T.UNT.001.2: ADC-modul: Test oversampling og PGA-skift
+
+T.UNT.001.3: ESR-modul: Test interpolation med kendte værdier
+
+T.UNT.001.4: SCPI-modul: Test alle kommandoer og fejltilstande
+
+T.INT.001: Integrationstests
+T.INT.001.1: Hardware/software integration: Test komplet målekæde
+
+T.INT.001.2: Display-integration: Test alle visningstilstande
+
+T.INT.001.3: SCPI-integration: Test seriel kommunikation ende-til-ende
+
+T.SYS.001: Systemtests
+T.SYS.001.1: Præcisionstest: Mål kendte modstande (0,1 Ω til 10 Ω)
+
+T.SYS.001.2: In-circuit test: Test på printplade med parallelle komponenter
+
+T.SYS.001.3: Temperaturtest: Karakterisér drift over 15-25°C
+
+T.SYS.001.4: Strømforbrugstest: Mål strømforbrug i alle tilstande
+
+T.ACC.001: Accepttests
+T.ACC.001.1: Præcision: Verificér 5% nøjagtighed over hele området
+
+T.ACC.001.2: Opløsning: Verificér 1 mΩ opløsning
+
+T.ACC.001.3: Sikkerhed: Verificér maksimalt 0,1V p-p testsignal
+
+T.ACC.001.4: Robusthed: Test ESD- og EMI-immunitet
+
+3.5 Produktionskrav
+P.PCB.001: PCB-produktion
+P.PCB.001.1: Materiale: FR-4, 1,6 mm, 1 oz kobber
+
+P.PCB.001.2: Overfladebehandling: HASL eller ENIG
+
+P.PCB.001.3: Sølvmaskering: Over alle udsatte kobberflader
+
+P.PCB.001.4: Testpoint: Inkluder testpunkter til alle kritiske signaller
+
+P.ASS.001: Sammensætning
+P.ASS.001.1: Loddeproces: Bølgelodning eller håndlodning
+
+P.ASS.001.2: Inspektion: Visuel inspektion efter IPC-A-610 klasse 2
+
+P.ASS.001.3: Rensing: Fjern fluxrester efter lodning
+
+P.TST.001: Produktionstest
+P.TST.001.1: In-circuit test: Test alle komponentforbindelser
+
+P.TST.001.2: Funktionstest: Test komplet systemfunktionalitet
+
+P.TST.001.3: Kalibrering: Indledende kalibrering med referencemodstande
+
+P.QUAL.001: Kvalitetskrav
+P.QUAL.001.1: Fejlrate: <1% ved sluttest
+
+P.QUAL.001.2: Dokumentation: Fuldt dokumenteret produktionsproces
+
+P.QUAL.001.3: Sporbarhed: Serienumre på alle enheder
+------------------------------------------------------------------------------------------------------------------------------
+§3.6 USE-CASES OG SCENARIER
+------------------------------------------------------------------------------------------------------------------------------
+3.6.1 HOBBYBRUG (U.HOB.001)
+------------------------------------------------------------------------------------------------------------------------------
+SCENARIO: Entusiastisk hobbyelektroniker reparerer vintage forstærker eller bygger eget kredsløb.
+
+BRUGERPROFIL: Uerfaren til moderat erfaren, begrænset adgang til professionelt udstyr
+
+TYPISK ANVENDELSE:
+
+Fejlfinding af elektrolytkondensatorer i printplader
+
+Verifikation af nyindkøbte kondensatorer før montering
+
+Periodisk vedligeholdelse af eget udstyr
+
+KRITISKE KRAV:
+
+Nem og intuitiv brug (H.MEC.001.2, S.DSP.001.1)
+
+Sikker in-circuit måling uden risiko for skade (H.LIM.002)
+
+Lav pris og vedligeholdelsesfri drift
+------------------------------------------------------------------------------------------------------------------------------
+3.6.2 SERVICEVÆRKSTED (U.SER.001)
+------------------------------------------------------------------------------------------------------------------------------
+SCENARIO: Professionelt reparationsværksted servicerer elektronikudstyr for kunder.
+
+BRUGERPROFIL: Erfaren tekniker, rutinepræget arbejdsgang, tidspres
+
+TYPISK ANVENDELSE:
+
+Hurtig diagnostik af strømforsyningsenheder
+
+Verifikation af reparationsarbejde
+
+Dokumentation af måleresultater til kunderapporter
+
+KRITISKE KRAV:
+
+Hurtig målecyklus ≤100 ms (S.PER.001.1)
+
+Robust konstruktion mod daglig brug (H.MEC.001.1)
+
+SCPI interface til automatisering (S.SCP.001.1)
+
+Høj pålidelighed og repeterbarhed (H.PRC.002)
+
+------------------------------------------------------------------------------------------------------------------------------
+3.6.3 UNDERVISNING - TEKNISKE SKOLER (U.EDU.001)
+------------------------------------------------------------------------------------------------------------------------------
+SCENARIO: Teknisk skole med elektroniklaboratorium til grundlæggende undervisning.
+
+BRUGERPROFIL: Studerende med varierende kompetencer, underviser som supervisor
+
+TYPISK ANVENDELSE:
+
+Laboratorieøvelser om kondensatorers egenskaber
+
+Demonstrering af ESR-begrebet og dets praktiske betydning
+
+Fejlfinding som del af projektarbejde
+
+KRITISKE KRAV:
+
+Sikkerhed først (H.SIG.001, H.LIM.002)
+
+Pædagogisk visning af både rå data og beregnede værdier (S.DSP.001.3-4)
+
+Modstandsdygtig konstruktion mod uerfaren håndtering (H.PCB.001.5)
+
+Dokumentation af måleprincipper (D.TEC.001.4)
+------------------------------------------------------------------------------------------------------------------------------
+3.6.4 UNDERVISNING - INGENIØRUDDANNELSER (U.ENG.001)
+------------------------------------------------------------------------------------------------------------------------------
+SCENARIO: Universitetsniveau ingeniøruddannelse med fokus på komponentkarakterisering.
+
+BRUGERPROFIL: Avancerede studerende, fokus på måleteori og nøjagtighed
+
+TYPISK ANVENDELSE:
+
+Karakterisering af komponenters temperatur- og frekvensafhængighed
+
+Validering af teoretiske modeller mod praktiske målinger
+
+Forskningsorienterede projekter med præcisionskrav
+
+KRITISKE KRAV:
+
+Høj nøjagtighed ≤5% (H.PRC.002)
+
+Opløsning 1 mΩ (H.PRC.001)
+
+SCPI interface til datalogning (S.SCP.001.1)
+
+Dokumentation af kalibreringsmetoder (D.TEC.001.4)
+------------------------------------------------------------------------------------------------------------------------------
+3.6.5 FORSKNING/UDVIKLING (U.RND.001)
+------------------------------------------------------------------------------------------------------------------------------
+SCENARIO: Forskningslaboratorium eller R&D afdeling i elektronikvirksomhed.
+
+BRUGERPROFIL: Specialister med høj ekspertise, fokus på metrologi
+
+TYPISK ANVENDELSE:
+
+Karakterisering af nye kondensatorteknologier
+
+Levetidstestning og aldringseksperimenter
+
+Udvikling af testprocedurer for produktionskvalitetssikring
+
+KRITISKE KRAV:
+
+Højeste nøjagtighed og reproducerbarhed (H.PRC.002)
+
+Automatiseringsmuligheder via SCPI (S.SCP.001.1)
+
+Dokumentation af måleusikkerheder (D.TEC.001.4)
+
+Kompatibilitet med laboratoriemiljøer og eksterne instrumenter
+------------------------------------------------------------------------------------------------------------------------------
+§3.7 MILJØKRAV
+------------------------------------------------------------------------------------------------------------------------------
+3.7.1 LAGRINGSBETINGELSER (E.STO.001)
+------------------------------------------------------------------------------------------------------------------------------
+KRAV FOR OPBEVARING VED IKKE-BRUG:
+
+Temperaturområde: -10°C til +60°C (E.STO.001.1)
+
+Relativ luftfugtighed: 10% til 90% ikke-kondenserende (E.STO.001.2)
+
+Maksimal lagringstid uden brug: 5 år uden yderligere kalibrering (E.STO.001.3)
+
+ESD-beskyttet opbevaring: Instrumentet skal opbevares i ESD-sikker pose eller beholder (E.STO.001.4)
+------------------------------------------------------------------------------------------------------------------------------
+3.7.2 TRANSPORT OG HÅNDTERING (E.TRA.001)
+------------------------------------------------------------------------------------------------------------------------------
+KRAV FOR TRANSPORT MELLEM LOKATIONER:
+
+Stødtolerance: Overlevelse af fald fra 1 meter højde på hårdt underlag (E.TRA.001.1)
+
+Vibrationstolerance: 5-500 Hz, 1g RMS, 1 time per akse (E.TRA.001.2)
+
+Temperatur under transport: -20°C til +70°C (E.TRA.001.3)
+
+ESD-beskyttelse under transport: Instrumentet skal transporteres i ESD-sikker emballage (E.TRA.001.4)
+------------------------------------------------------------------------------------------------------------------------------
+3.7.3 LEVETID OG ALDRING (E.LIF.001)
+------------------------------------------------------------------------------------------------------------------------------
+FORVENTET LEVETID UNDER NORMAL BRUG:
+
+Mekanisk levetid: Minimum 50.000 målinger (E.LIF.001.1)
+
+Elektronisk levetid: Minimum 10.000 driftstimer (E.LIF.001.2)
+
+Kalibreringsinterval: 12 måneder under normal brug eller ved temperaturudsving >10°C (E.LIF.001.3)
+
+Degradationskriterier: Instrumentet betragtes som udtjent når:
+
+Nøjagtigheden falder til >10% (E.LIF.001.4)
+
+Testsignalet afviger >20% fra 0,1V p-p (E.LIF.001.5)
+
+ADC eller DDS-komponenter fejler (E.LIF.001.6)
+------------------------------------------------------------------------------------------------------------------------------
+3.7.4 EM-BALLAGE OG HÅNDTERING (E.EMB.001)
+------------------------------------------------------------------------------------------------------------------------------
+KRAV TIL EMBALLAGE OG UDREKNING:
+
+ESD-beskyttelse: Alle komponenter skal leveres i ESD-sikre poser/beholdere (E.EMB.001.1)
+
+Fugtbeskyttelse: Silicagel-posninger ved længere opbevaring (E.EMB.001.2)
+
+Mekanisk beskyttelse: Minimum 2 cm skumbespænsning alle sider (E.EMB.001.3)
+
+Brugsanvisning på emballage: Klare ikoner for ESD-følsomhed og håndtering (E.EMB.001.4)
+
+Genbrugsvenlig emballage: Minimum 80% af emballagen skal være genanvendelig eller genbrugelig (E.EMB.001.5)
+------------------------------------------------------------------------------------------------------------------------------
+3.7.5 MILJØPÅVIRKNING OG AFFALDSHÅNDTERING (E.ENV.001)
+------------------------------------------------------------------------------------------------------------------------------
+KRAV TIL MILJØVENLIG DESIGN OG BORTSKAFFELSE:
+
+RoHS-kompatibilitet: Alle komponenter skal overholde RoHS direktiv 2011/65/EU (E.ENV.001.1)
+
+REACH-kompatibilitet: Ingen SVHC-stoffer over 0,1% vægtprocent (E.ENV.001.2)
+
+Affaldsklassificering: WEEE kategori 3 - IT og telekommunikationsudstyr (E.ENV.001.3)
+
+Demontagevejledning: Skitse for nem demontage til genbrug/affaldssortering (E.ENV.001.4)
+
+Forventet energiforbrug: <1W i standby, <3W under drift (E.ENV.001.5)
+==============================================================================================================================
+§4. Epistemiske begrænsninger
+==============================================================================================================================
+H.UNC.001: Signalintegritet: 5% præcision forudsætter optimal PCB-layout med korrekt grounding og afskærmning. 
+Afvigelser kan påvirke nøjagtigheden med op til 2%.
+
+H.UNC.002: Komponenttolerance: Samlet nøjagtighed afhænger af præcisionsmodstandens tolerance (<0,1%) og 
+temperaturkoefficient (<50 ppm/°C).
+
+S.UNC.001: Software linearitet: Interpolationsnøjagtigheden antager lineært respons mellem tabelpunkterne. 
+Reelt respons kan afvige med op til 0,5%.
+
+H.UNC.003: In-circuit påvirkning: Parallelle impedanser i testet kredsløb kan påvirke målingen. 
+Påvirkningen er ukvantificerbar uden kendskab til det specifikke kredsløb.
+==============================================================================================================================
+§5. Manglende information til implementering
+==============================================================================================================================
+H.MIS.001: Specifikke komponentmodeller: Opamp-modeller, potentiometertype, Schottky-dioder, 
+switched capacitor IC, LDO-regulator.
+
+H.MIS.002: PCB-layout detaljer: Specifik routing, komponentplacering, guard ring design.
+
+T.MIS.001: Kalibreringsudstyr: Præcise referencemodstande (0,01 Ω til 10 Ω) med dokumenteret nøjagtighed.
+
+D.MIS.001: Testprotokoller: Detaljerede procedure for hver testtype.
+
+P.MIS.001: Produktionsdokumentation: Manufacturing files (Gerber, drill, pick-and-place).
+==============================================================================================================================
+§6. Praktisk implementering
+==============================================================================================================================
+------------------------------------------------------------------------------------------------------------------------------
+6.1 Implementeringsfaser
+------------------------------------------------------------------------------------------------------------------------------
+Fase 1 (Prototype): Breadboard validering af signalkæde
+
+Fase 2 (PCB-design): 2-lags PCB med EMI/ESD-beskyttelse
+
+Fase 3 (Firmware): Arduino C++ implementering med modultest
+
+Fase 4 (Integration): Systemintegration og test
+
+Fase 5 (Kalibrering): Tabelgenerering og validering
+------------------------------------------------------------------------------------------------------------------------------
+6.2 Risikohåndtering
+------------------------------------------------------------------------------------------------------------------------------
+Signalstøj: Implementer guarding og afskærmning på PCB
+
+Software reliability: Watchdog timer og omfattende fejlhåndtering
+
+Termisk drift: Karakterisér og kompensér i software hvis nødvendigt
+
+ESD: TVS-dioder på alle eksterne forbindelser
+------------------------------------------------------------------------------------------------------------------------------
+6.3 Vedligeholdelseskrav
+------------------------------------------------------------------------------------------------------------------------------
+Fejlfinding: Diagnostiske SCPI-kommandoer
+
+Opdatering: Firmwareopdatering via USB-C
+
+Kalibrering: Dokumenteret procedure med 6-måneders interval
+==============================================================================================================================
+§7. Referencer
+==============================================================================================================================
+7.1 Referencekrav
+H.REF.001: AD9850 Datasheet, Analog Devices
+
+H.REF.002: ADS1115 Datasheet, Texas Instruments
+
+H.REF.003: ESP32 Technical Reference Manual
+
+S.REF.001: Arduino Language Reference
+
+D.REF.001: Doxygen Manual
+
+T.REF.001: IPC-A-610 Acceptability of Electronic Assemblies
+

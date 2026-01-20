@@ -1,0 +1,488 @@
+==============================================================================================================================
+| 															     |
+| PCB Layout Rapport for In-Circuit ESR-Meter 										     |
+| 															     |
+==============================================================================================================================
+| DOKUMENT ID: PCB-ESR-MIL-001 												     |
+| DATO: 19-01-25 													     |
+| VERSION: 1.00 													     |
+| SYSTEM: IN-CIRCUIT ESR METER 												     |
+| FORFATTER: Jan Engelbrecht Pedersen 											     |
+==============================================================================================================================
+| REFERENCER: SRS-ESR-MIL-001 (Kravspecifikation), HWKONS-ESR-MIL-001 (Hardwarekonstruktionsrapport) |
+==============================================================================================================================
+
+==============================================================================================================================
+§1. Præcis sammenfatning
+==============================================================================================================================
+Denne rapport specificerer PCB-layout og designkrav for et professionelt in-circuit ESR-meter baseret på
+kravspecifikation SRS-ESR-MIL-001. Rapporten beskriver komplet PCB-specifikation inklusive lagstruktur,
+komponentplacering, routingstrategier og EMI/EMC/ESD-beskyttelse. Layoutet implementerer alle H.PCB.001-krav
+gennem 2-lags design med komplet masseplan, analog/digital separation, og industrielle beskyttelsesforanstaltninger.
+==============================================================================================================================
+
+==============================================================================================================================
+§2. PCB-specifikationer
+==============================================================================================================================
+2.1 Grundlæggende PCB-parametre
+------------------------------------------------------------------------------------------------------------------------------
+Parameter Specifikation Kravreference
+
+Lagantal 2 lag (top og bottom) H.PCB.001.1
+Materiale FR-4, flammehæmmende (UL94-V0) H.PCB.001.1
+Tykkelse 1,6 mm ±10% H.PCB.001.1
+Kobbertykkelse 1 oz (35 µm) for begge lag Standard
+Overfladebehandling ENIG (Electroless Nickel Immersion Gold) P.PCB.001.2
+Loddemaskefarve Grøn LPI (Liquid Photo Imageable) -
+Silkskriftfarve Hvid -
+
+2.2 PCB-dimensioner og mekanik
+------------------------------------------------------------------------------------------------------------------------------
+Parameter Værdi Noter
+
+Samlet dimension 90 × 140 mm Indenfor H.MEC.001.4
+Mounting holes 4 × M3, 3,2 mm diameter 5 mm fra kant
+Kantafrunding 1,5 mm radius på alle hjørner -
+Edge clearance 1,0 mm minimum fra komponenter til kant IPC-2221A
+
+2.3 Via-specifikationer
+------------------------------------------------------------------------------------------------------------------------------
+Via-type Diameter Anvendelse
+
+Through-hole via 0,3 mm drill / 0,6 mm pad Standard signal
+Tenting Alle vias tented Forbedret isolation
+==============================================================================================================================
+
+==============================================================================================================================
+§3. Designfilosofi og overordnede layoutprincipper
+==============================================================================================================================
+3.1 Zonering og funktionel opdeling
+------------------------------------------------------------------------------------------------------------------------------
+Systemet er opdelt i fire primære zoner for at optimere signalintegritet og minimere interferens:
+
+Zone A: Analog sektion (venstre side af PCB)
+• Operationsforstærkere (U3, U4, U5, U6)
+• ADC (U7) med tilhørende komponenter
+• Filterkomponenter (R9, R10, C1-C3)
+• Præcisionsmodstande (R1-R4, R_series)
+• Beskyttelsesdioder (D3, D4)
+
+Zone B: Digital sektion (højre side af PCB)
+• Mikrokontroller (U1)
+• Level shifter
+• I2C pull-up modstande
+• Knapper (SW1, SW2)
+• USB-C connector (J1)
+
+Zone C: Strømforsyning (centreret mellem zone A og B)
+• LDO regulator (U9)
+• Negativ spændingskonverter (U10)
+• Decoupling kondensatorer
+• Forsyningsfilter
+
+Zone D: Interface (kantpositioner)
+• Kelvin socket (4-pol)
+• Testpunkter (TP1-TP11)
+
+3.2 Kritisk komponentplacering
+------------------------------------------------------------------------------------------------------------------------------
+Kelvin Socket (4-pol): Placeret på PCB-kanten med direkte, korte forbindelser til:
+• PROBE_HI_FORCE → 10µF koblingskondensator → U3 buffer output
+• PROBE_HI_MEAS → R1 → U4 pin 3
+• PROBE_LO_FORCE → R_series → AGND
+• PROBE_LO_MEAS → R3 → U4 pin 2
+
+ADC (U7): Placeret tæt på filter output (U6 pin 1) med:
+• Maksimalt 10 mm afstand til FILTER_OUT
+• Beskyttelsesdioder (D3, D4) placeret mellem filter og ADC indgang
+
+Operationsforstærkere: Arrangeret i signalfølge:
+• U3 (Buffer) → U4 (Diff Amp) → U5 (Superdiode) → U6 (Filter)
+==============================================================================================================================
+
+==============================================================================================================================
+§4. Routingstrategier og signalintegritet
+==============================================================================================================================
+4.1 Designregler og constraints
+------------------------------------------------------------------------------------------------------------------------------
+Minimum spor/rum afstande:
+• Signal spor: 0.2 mm bredde / 0.2 mm clearance
+• Strømforsyningsspor: 0.5 mm bredde / 0.3 mm clearance
+• Masseplan til spor: 0.3 mm clearance
+• Komponent til komponent: 0.4 mm (IPC-2221A standard)
+
+Via specifikationer:
+• Gennemgående via: 0.3 mm drill / 0.6 mm pad diameter
+• Via til via clearance: 0.4 mm minimum
+• Tenting af alle vias forbedrer isolering
+
+Impedanskontrol:
+• Ingen kontrolleret impedans krævet for analoge signaler (<100 kHz)
+• USB differential pair: 90Ω ±10% (beregnet ved fabrikant)
+• I2C linjer: Ingen specifik impedanskrav, men hold kort (<100 mm)
+
+4.2 Masseplan strategi
+------------------------------------------------------------------------------------------------------------------------------
+• Separate AGND og DGND planer på samme lag
+• Enkelt forbindelsespunkt ved strømforsyningsmodulet (U9/U10 område)
+• Minimum 10 vias per cm² for at opretholde lav impedans
+• Ingen splits i masseplaner under kritiske analoge komponenter
+
+4.3 Guard ring implementation
+------------------------------------------------------------------------------------------------------------------------------
+For hver operationsforstærker og ADC:
+• Tegn en guard ring af kobber (0.5 mm bred) omkring:
+
+Opamp input pins (pin 2 og 3)
+
+ADC analog input (A0)
+• Forbind guard ring til AGND via separat via
+• Placer ingen andre signaler eller masse indenfor guard ring
+==============================================================================================================================
+
+==============================================================================================================================
+§5. Strømforsyningsdistribution og termisk design
+==============================================================================================================================
+5.1 Varmespredning
+------------------------------------------------------------------------------------------------------------------------------
+Varmegenererende komponenter:
+• ESP32-WROOM-32: 500 mW typisk, 1W maks under WiFi
+• LDO regulator (U9): 300 mA × (5V-3.3V) = 510 mW dissipation
+• Negativ konverter (U10): 50 mA effektivitet ~85%
+
+Thermal relief design:
+• 4 thermal vias under ESP32's ground pad
+• 6 thermal vias under LDO's tab (hvis SOT-223 pakning)
+• Thermal vias: 0.3 mm drill / 0.6 mm pad med 0.2 mm mask åbning
+
+Kobberpours for varmespredning:
+• Top layer: 2 oz kobber under varmegenererende komponenter
+• Bottom layer: Solid kobberpour under hele strømforsyningsområde
+• Forbind thermal vias til store kobberområder på begge lag
+
+5.2 Luftstrøm og konvektion
+------------------------------------------------------------------------------------------------------------------------------
+Komponentplacering for naturlig konvektion:
+• Høje komponenter placeret nær PCB-kanter
+• Ingen komponenter direkte opstrøms for varmekilder
+• 3 mm minimum vertikal clearance mellem komponenter
+
+Ventilation:
+• Ingen ventilation holes nødvendige (H.MEC.001.3)
+• Kabinetdesign skal tillade konvektion omkring PCB
+• Ingen aktive køleelementer
+==============================================================================================================================
+
+==============================================================================================================================
+§6. EMI, EMC og ESD-beskyttelsesteori og implementering
+==============================================================================================================================
+6.1 Teoretisk fundament
+------------------------------------------------------------------------------------------------------------------------------
+EMI (Electromagnetic Interference):
+• Kilde: Hurtige digitale signalændringer (ESP32, AD9850 kommunikation)
+• Effekt: Indfører støj i målesignaler, reducerer SNR, forringes præcision
+• Løsning: Fysisk separation, guard rings, decoupling
+
+EMC (Electromagnetic Compatibility):
+• Kilde: Systemet skal både tolerere ekstern støj og ikke udsende for meget støj
+• Effekt: Systemfejl, forringet performance
+• Løsning: Kontinuerlige masseplaner, filterkomponenter, impedanskontrol
+
+ESD (Electrostatic Discharge):
+• Kilde: Statisk elektricitet fra håndtering eller miljø
+• Effekt: Katastrofal ødelæggelse af halvlederkomponenter
+• Løsning: TVS-dioder, spark gaps, beskyttende diodepar
+
+6.2 Praktisk implementering af ESD-beskyttelse
+------------------------------------------------------------------------------------------------------------------------------
+TVS-dioder ved eksterne forbindelser:
+• Kelvin Socket (4-pol) beskyttelse: 4 individuelle TVS-dioder (SMAJ5.0A)
+• USB-C Connector beskyttelse: Dedikerede TVS-diodearrangementer
+• Routing-krav: Maksimalt 2-3 mm afstand mellem TVS-diode og connector-pad
+
+Indbygget ADC-input beskyttelse:
+• D3 (BAT54): Anode fra FILTER_OUT til katode ved +3.3V_ANALOG
+• D4 (BAT54): Katode fra FILTER_OUT til anode ved AGND
+• Kritiske layoutkrav: Dioderne placeres fysisk mellem filter og ADC
+
+Strømforsynings ESD/EMI filtrering:
+• C11: 100pF keramisk kondensator (0402) parallelt med
+• R12: 10Ω modstand (0402) i serie med +3.3V_ANALOG linjen
+
+Grounding-system beskyttelse:
+• FB1: 600Ω @ 100 MHz ferritperle (0805) i serie mellem AGND og DGND
+• Spark gaps ved høj-risiko inputs: 0.2 mm luftgap mellem probepad og chassis-ground
+
+Komponentvalg og specifikationer:
+• TVS-diode krav: Respons tid <1 ns, clamping spænding <9V, kapacitans <5pF
+• Schottky-diode krav: Fremspændingsfald <0.3V ved 1mA, reverse leakage <5µA
+• RC-filter komponenter: 10Ω ±5% modstand, 100pF ±10% NPO/COG kondensator
+
+6.3 Layout implementeringsdetaljer
+------------------------------------------------------------------------------------------------------------------------------
+Kobberpours for ESD-stier:
+• Dedikeret chassis-ground pour omkring alle eksterne connectors
+• 5 mm minimum bredde på chassis-ground spor
+• Mange stitching vias (hver 2 mm) mellem top og bottom chassis-ground
+
+Separation af beskyttelseskredsløb:
+• ESD-beskyttelseskomponenters ground er separat fra signal-ground
+• Kun forbundet ved et enkelt punkt til main system ground
+
+Silkskrift og identifikation:
+• Klart mærkede ESD-komponenter med "ESD" prefix i designator
+• Vigtige ESD-stier vist som dashed lines på assembly drawing
+• Polaritetsmærkning på alle dioder
+==============================================================================================================================
+
+==============================================================================================================================
+§7. Testbarhed og debugging
+==============================================================================================================================
+7.1 Testpunkter implementering
+------------------------------------------------------------------------------------------------------------------------------
+Kritiske testpunkter:
+• TP1-TP11: 1.0 mm diameter, frilagt kobber
+• Placeret langs PCB-kant for nem adgang
+• Silkskrift label indeholder netnavn og testpunkt nummer
+
+Boundary scan og debugging:
+• JTAG header til ESP32 debugging (valgfri)
+• Seriel UART testpoints (TX, RX, GND)
+• I2C testpoints med 100 mil pitch header
+
+7.2 In-Circuit Test (ICT) venlighed
+------------------------------------------------------------------------------------------------------------------------------
+Testpoint dækning:
+• Alle kritiske nets har dedikerede testpunkter
+• Testpunkter for strømrail voltages (+3.3V, -5V, +5V)
+• Testpunkter for reference signaler (AGND, DGND)
+
+Komponent orientering:
+• Enhedsretning for alle IC'er (pin 1 markeret på silkskrift)
+• Klart mærkede polariteter for dioder og elektrolytkondensatorer
+• Reference designators placeret tæt på komponenter uden overlap
+
+Accessibilitet:
+• Ingen BGA komponenter (alle komponenter har ledninger)
+• Minimum komponenthøjde forskel for test fixtures
+• Testpunkter ikke skjult af høje komponenter
+==============================================================================================================================
+
+==============================================================================================================================
+§8. Fabrikationsfiler og dokumentation
+==============================================================================================================================
+8.1 Output filer til produktion
+------------------------------------------------------------------------------------------------------------------------------
+Gerber filer:
+• Top lag: Komponenter og signal routing
+• Bottom lag: Routing og komponenter
+• Top solder mask: Grøn LPI
+• Bottom solder mask: Grøn LPI
+• Top silkskrift: Hvid
+• Drill fil: Excellon format, absolute koordinater
+• Drill drawing: PCB dimensioner og hole sizes
+
+Assembly filer:
+• Pick and place fil: Centroid data (X, Y, rotation, side)
+• Bill of Materials (BOM): Komplet med part numbers
+• Assembly drawing: Komponentplacering og orientering
+
+Test og inspektion:
+• Bare-board test netlist
+• Flying probe test program
+• AOI (Automated Optical Inspection) reference billeder
+
+8.2 Kvalitetskontrol og verifikation
+------------------------------------------------------------------------------------------------------------------------------
+Design Rule Check (DRC):
+• Fabrikant-specifikke DRC regler tjekket
+• Minimum fabrikations-tolerancer respekteret
+• Copper-to-edge clearance: 0.5 mm minimum
+
+Elektrisk Rule Check (ERC):
+• Åbne nets verifikation
+• Korte nets verifikation
+• Power og ground connectivity verifikation
+
+Signal Integrity Simulation (Valgfri):
+• Power distribution network (PDN) analyse
+• Cross-talk analyse mellem kritiske signaler
+• Return path kontinuitet verifikation
+
+8.3 Revisionshistorie og sporbarhed
+------------------------------------------------------------------------------------------------------------------------------
+PCB identifikation:
+• PCB part number og revision i silkskrift
+• Serienummer felt frilagt for laser marking
+• Fabrikationsdato kode i silkskrift
+• RoHS og CE compliance mærkning
+
+Dokumentation til produktion:
+• Komplet produktionspakke (zip-fil)
+• Fabrikationsinstruktioner og special notes
+• Acceptkriterier og test procedurer
+• Packaging og shipping requirements
+==============================================================================================================================
+
+==============================================================================================================================
+§9. Konklusion og opsummering
+==============================================================================================================================
+9.1 Kravopfyldelse opsummering
+------------------------------------------------------------------------------------------------------------------------------
+H.PCB.001 krav fuldt implementeret:
+• H.PCB.001.1: 2-lags FR-4 design med 1.6 mm tykkelse ✓
+• H.PCB.001.2: Spor/rum minimum 0.2 mm/0.2 mm ✓
+• H.PCB.001.3: Komplet masseplaner på begge sider ✓
+• H.PCB.001.4: EMI-beskyttelse med guarding og afskærmning ✓
+• H.PCB.001.5: ESD-beskyttelse med TVS-dioder og spark gaps ✓
+• H.PCB.001.6: Analog/digital separation med 5 mm buffer ✓
+• H.PCB.001.7: Gulvstående 4-pol Kelvin-socket implementeret ✓
+
+9.2 Performance forventninger
+------------------------------------------------------------------------------------------------------------------------------
+Signal integritet:
+• Forventet SNR: >60 dB i analog kæde
+• Ground bounce: <50 mV ved fuld digital aktivitet
+• Cross-talk: <-60 dB mellem analoge og digitale signaler
+
+EMC/ESD performance:
+• ESD robusthed: 8 kV kontakt discharge (IEC 61000-4-2)
+• Radiated emissions: Under EN 55032 Klasse B grænser
+• Immunitet: Overholder EN 55024 industrielle krav
+
+9.3 Implementeringsfaser
+------------------------------------------------------------------------------------------------------------------------------
+Fase 1: Prototype validation:
+• 3× prototype boards til test og validering
+• Manuel sammensætning og initial test
+
+Fase 2: Design revision:
+• Implementering af test resultater
+• Optimering baseret på målinger
+• Endelig DRC og fabrikationsforberedelse
+
+Fase 3: Produktion:
+• 50× boards initial batch
+• Fuldt test og kalibrering
+• Dokumentation og release
+
+9.4 Risikominimering
+------------------------------------------------------------------------------------------------------------------------------
+Identificerede risici og mitigering:
+• Signalstøj i analog kæde → Guard rings, proper grounding, RC filtering
+• ESD skade på inputs → TVS-dioder, spark gaps, beskyttende dioder
+• Thermal overophedning → Thermal vias, korrekt komponentplacering
+• Fabrikationsfejl → Klart dokumenterede krav, DRC tjek, pilot batch
+
+Kvalitetsassurance:
+• 100% elektrisk test af færdige boards
+• 5% sample baseret mekanisk inspektion
+• Burn-in test af 10% af produktionen
+
+9.5 Fremtidige forbedringer
+------------------------------------------------------------------------------------------------------------------------------
+Potentielle design iterationer:
+• 4-lags design for endnu bedre EMC performance
+• Indlejret temperatur sensor for drift kompensation
+• USB-C Power Delivery for højere strøm kapacitet
+• Bluetooth/WiFi integration for trådløs datalogging
+
+Skalerbarhed:
+• Design understøtter nem komponent substitution
+• Modulær arkitektur tillader funktionsudvidelse
+• Formfaktor kompatibel med standard kabinetløsninger
+==============================================================================================================================
+
+==============================================================================================================================
+§10. Epistemiske begrænsninger
+==============================================================================================================================
+PCB-layout begrænsninger (H.UNC.001): 5% præcision forudsætter optimal PCB-layout med korrekt grounding og afskærmning.
+Afvigelser i layout kan påvirke nøjagtigheden med op til 2%.
+
+Komponentplacering begrænsninger: Termisk drift af præcisionskomponenter kan påvirke målenøjagtigheden ved
+temperaturer udenfor 15-25°C området.
+
+ESD-beskyttelseseffektivitet: ESD-performance afhænger af korrekt implementation af TVS-dioder og grounding.
+Afvigelser i produktion kan reducere beskyttelsesniveauet.
+==============================================================================================================================
+
+==============================================================================================================================
+§11. Manglende information til produktion
+==============================================================================================================================
+Specifikke fabrikationskrav (P.MIS.001): Manufacturing files (Gerber, drill, pick-and-place) kræver endelig
+validering med udvalgt producent.
+
+Testprotokoller (T.MIS.001): Detaljerede procedure for ESD-test og EMI-test kræver specifik testudstyr og -metoder.
+
+Kalibreringsudstyr (T.MIS.001): Præcise referencemodstande (0,01 Ω til 10 Ω) med dokumenteret nøjagtighed
+kræves for PCB-validering og systemkalibrering.
+==============================================================================================================================
+
+==============================================================================================================================
+§12. Praktisk anvendelse
+==============================================================================================================================
+12.1 Implementeringsfaser med kravopfyldelse
+------------------------------------------------------------------------------------------------------------------------------
+Fase 1 (Prototype): Breadboard validering af signalkæde med fokus på H.GEN.001, H.GEN.002, H.AMP.001,
+H.REC.001, H.FLT.001 implementering med TS3V902 operationsforstærkere, inklusive test af beskyttelsesdioder.
+
+Fase 2 (PCB-design): 2-lags PCB med EMI/ESD-beskyttelse implementerer alle H.PCB.001 krav, inklusive korrekt
+placering af de to Schottky-beskyttelsesdioder mellem filter og ADC.
+
+Fase 3 (Produktion og test): PCB-produktion og sammensætning implementerer P.PCB.001 og P.ASS.001 krav.
+
+12.2 Risikohåndtering relateret til krav
+------------------------------------------------------------------------------------------------------------------------------
+Signalstøjrisiko: Implementering af guarding og afskærmning på PCB adresserer H.PCB.001.4 EMI-beskyttelseskrav.
+
+ESD og overspændingsbeskyttelse: TVS-dioder på eksterne forbindelser og Schottky-klemmere på den kritiske
+analoge signalkæde (filter til ADC) implementerer H.PCB.001.5 ESD-beskyttelseskrav og yderligere robusthed.
+
+Termisk drift: Karakterisering og kompensation adresserer H.UNC.002 komponenttolerancebegrænsninger.
+
+12.3 Produktionsovervejelser
+------------------------------------------------------------------------------------------------------------------------------
+Testability (P.PCB.001.4): Inkludering af testpunkter til alle kritiske signaler, herunder på begge sider af
+beskyttelsesdioderne mellem filter og ADC.
+
+Reparabilitet: Standard komponentpakninger (SOIC, SOT-23) fremfor BGA.
+(Bemærk: TS3V902 anvendes i DIP14-case, dioder i SOT-23)
+
+Kalibrering: Design for nem adgang til kalibreringspotentiometer i overensstemmelse med H.GEN.002.
+==============================================================================================================================
+
+==============================================================================================================================
+§13. Litteratur og reference
+==============================================================================================================================
+13.1 Referencemateriale
+------------------------------------------------------------------------------------------------------------------------------
+Horowitz, P., & Hill, W. (2015). The Art of Electronics (3. udgave). Cambridge University Press.
+(Operationsforstærker-kredsløb, filterdesign, strømforsyningsdesign)
+
+Ott, H. W. (2009). Electromagnetic Compatibility Engineering. John Wiley & Sons.
+(PCB-layout teknikker for EMI/EMC/ESD-beskyttelse)
+
+Williams, J. (2015). Analog Circuit Design: A Tutorial Guide to Applications and Solutions. Elsevier.
+(Præcisionsmåleteknik, superdiode-design, lavstøjs design, indgangsbeskyttelse)
+
+Kravspecifikation SRS-ESR-MIL-001 version 1.00 (reference for alle H-krav)
+
+Hardwarekonstruktionsrapport HWKONS-ESR-MIL-001 version 1.00 (reference for netliste og komponentdata)
+
+13.2 Nøglekonklusioner
+------------------------------------------------------------------------------------------------------------------------------
+PCB-layoutet implementerer fuldt alle H.PCB.001-krav fra kravspecifikation SRS-ESR-MIL-001 gennem
+veldefinerede zonering, routingstrategier og beskyttelsesforanstaltninger.
+
+Designet opfylder præcisionskrav (H.PRC.001, H.PRC.002) gennem fysisk separation af analoge og digitale
+sektioner, korrekt grounding og implementering af guard rings omkring kritiske analoge komponenter.
+
+EMI/EMC/ESD-beskyttelsen implementerer industrielle standarder gennem TVS-dioder på alle eksterne
+forbindelser, spark gaps ved høj-risiko inputs, og dedikerede beskyttelseskredsløb for ADC-indgangen.
+
+Termisk design sikrer korrekt varmespredning gennem thermal vias, kobberpours og strategisk
+komponentplacering for naturlig konvektion i overensstemmelse med H.MEC.001.3.
+
+Produktionsvenlighed sikres gennem omfattende testpunkter, klar silkskrift-markering og
+enhedsretning af alle komponenter i overensstemmelse med P.PCB.001 og P.ASS.001 krav.
+==============================================================================================================================

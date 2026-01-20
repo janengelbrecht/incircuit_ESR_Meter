@@ -1,0 +1,373 @@
+================================================================================
+|                                                                              |
+|                  Brugervejledning for In-Circuit ESR-meter                   |
+|                                                                              |
+================================================================================
+| DOKUMENT ID:  UGUI-ESR-MIL-001                                               |
+| DATO:         19-01-25                                                       |
+| VERSION:      1.00                                                           |
+| SYSTEM:       INCIRCUIT ESR METER                                            |
+| FORFATTER:    Jan Engelbrecht Pedersen                                       |
+================================================================================
+
+§1. Præcis sammenfatning
+================================================================================
+Denne brugervejledning beskriver korrekt anvendelse, kalibrering og vedligehold-
+else af ESR-meteret baseret på kravspecifikation SRS-ESR-MIL-001. Systemet måler
+ESR (Equivalent Series Resistance) i elektrolytkondensatorer i området 0-10 Ω
+med 1 mΩ opløsning ved 100 kHz testsignal med maksimalt 0,1V amplitude for
+sikker in-circuit operation. Vejledningen dækker alle brugertyper fra hobbybrug
+til professionel service og forskning.
+--------------------------------------------------------------------------------
+
+§2. Definitioner og præcisering
+================================================================================
+2.1 Nøglebegreber
+ESR (H.ESR.001): Effektiv serie-modstand i elektrolytkondensator ved 100 kHz
+frekvens. Måleenhed: ohm (Ω), milliohm (mΩ).
+
+In-circuit måling (H.MET.001): Måling udført uden afsondring fra kredsløb med
+≤0,1V testsignal for at undgå halvlederaktivering.
+
+Kelvin-måling: Fire-leder måleteknik der eliminerer fejl fra lednings- og
+kontaktmodstand.
+--------------------------------------------------------------------------------
+2.2 Sikkerhedssymboler
+⚠️ ADVARSEL: Følg sikkerhedsanvisninger for at undgå personskade eller skade på
+udstyr.
+
+⚡ ELSIKERHED: Altid sluk for strømmen til testet kredsløb før måling.
+
+📡 EMI/ESD: Instrumentet indeholder ESD-følsomme komponenter. Håndter korrekt.
+--------------------------------------------------------------------------------
+
+§3. Systemoversigt og hurtigstart
+================================================================================
+3.1 Pakkeindhold og komponenter
+Standardpakke indeholder:
+• ESR-meter hovedenhed (100×150×50 mm ABS kabinet)
+• 4× isolerede kelvin-prober med spidse tip (farvekodet)
+• USB-C strømkabel
+• Kalibreringscertifikat (kun ved fuld kalibrering)
+• Denne brugervejledning
+--------------------------------------------------------------------------------
+3.2 Hurtigstart - førstegangsbrug
+Trin 1: Strømforbindelse
+Tilslut USB-C kabel til instrumentets USB-C port og 5V USB strømforsyning/-
+computer. Den interne strømforsyning initialiseres automatisk.
+
+Trin 2: Systemopstart
+Systemet starter automatisk ved strømtilslutning.
+LCD display viser startsekvens:
+ESR-Meter v1.00
+Initialiserer...
+Efter 2-3 sekunder: ESR-Meter Ready
+
+Trin 3: Probeforbindelse
+Tilslut de fire kelvin-prober til de fire gulvstående sockets på frontpanelet:
+• Rød (Force High): HF
+• Gul (Sense High): HS
+• Grøn (Sense Low): LS
+• Sort (Force Low): LF
+
+Trin 4: DUT-forbindelse (Device Under Test)
+Forbered kondensatoren eller kredsløb til test:
+• Sluk ALTID strømmen til testet kredsløb først
+• Aflad kondensatorer fuldstændigt
+• Forbind kelvin-proberne:
+  - HF og HS til kondensatorens positive ben
+  - LF og LS til kondensatorens negative ben
+
+Trin 5: Måling
+Tryk ingen knapper - systemet måler automatisk hvert 100. millisekund.
+Resultat vises på LCD:
+ESR: 1.234 mΩ
+ADC: 1234 PGA:2x
+--------------------------------------------------------------------------------
+
+§4. Detaljeret operationsvejledning
+================================================================================
+4.1 Display og brugergrænseflade
+4.1.1 LCD Display Layout
+Linje 1: [ESR: 1.234 mΩ       ]
+Linje 2: [ADC: 1234 PGA:2x    ]
+Varianter:
+• ESR-visning: 1.234 mΩ, 0.456 Ω, 123.4 nΩ (automatisk skalering)
+• Rå ADC-visning (ved skift med knap 1): ADC: 1234 PGA:2x (37.6%)
+--------------------------------------------------------------------------------
+4.1.2 Statusindikatorer
+• PGA: Viser aktiv forstærkning (2x, 4x, 8x, 16x) - automatisk justering
+• ADC: Rå 16-bit værdi efter 64× oversampling (kun til debugging)
+--------------------------------------------------------------------------------
+4.2 Knapfunktioner
+Knap 1 (venstre): Skift mellem displaytilstande
+Kort tryk (<1s): Skifter mellem:
+• ESR_RESULT: Viser beregnet ESR-værdi (normaltilstand)
+• RAW_ADC: Viser rå ADC-værdi og PGA (til kalibrering)
+
+Knap 2 (højre): Skift kommunikationstilstand
+Kort tryk (<1s): Skifter mellem:
+• NORMAL: Viser kun på LCD (ingen seriel output)
+• SCPI: Aktiverer SCPI-protokol over seriel USB
+
+Langt tryk (begge knapper >3s): Nødgenstart/systemreset
+--------------------------------------------------------------------------------
+4.3 Måleprocedurer
+4.3.1 Standard kondensatormåling
+• Kontroller at kondensatoren er fuldt afladet (målt spænding <0,1V)
+• Forbind kelvin-proberne korrekt (se §3.2)
+• Vent 2-3 sekunder for stabilisering
+• Afmeldt ESR-værdi med opløsning ned til 1 mΩ
+--------------------------------------------------------------------------------
+4.3.2 In-circuit måling
+• KRITISK: Sluk strømmen til hele kredsløbet
+• Identificer kondensatorens position på PCB
+• Forbind probene direkte til kondensatorens ben/loddepunkter
+• Tjek for parallelle impedanser som kan påvirke målingen
+• Notér eventuelt at lave ESR-værdier kan være maskerede af parallelle
+  komponenter
+--------------------------------------------------------------------------------
+4.3.3 Referencetest og validering
+• Ved mistanke om instrumentfejl: Test med kendte præcisionsmodstande (1 Ω,
+  5 Ω, 10 Ω)
+• Sammenlign med multimeter i modstandstilstand ved lav frekvens
+--------------------------------------------------------------------------------
+4.4 Seriel kommunikation (SCPI)
+4.4.1 Opsætning
+• Tilslut USB-C til computer
+• Tryk knap 2 for at skifte til SCPI tilstand
+• Åbn seriel terminal (115200 baud, 8N1)
+• Instrumentet responderer nu på SCPI-kommandoer
+--------------------------------------------------------------------------------
+4.4.2 Basis SCPI-kommandoer
+*IDN?                     // Enhedsidentifikation
+MEASure:ESR?              // Udfør enkeltmåling og returner ESR
+SYSTem:PRESet             // Nulstil system til fabriksindstillinger
+DISPlay:MODE RAW          // Skift til rå ADC visning
+DISPlay:MODE ESR          // Skift til ESR visning (standard)
+SYSTem:COMMunication ON   // Aktiver SCPI-tilstand
+SYSTem:COMMunication OFF  // Deaktiver SCPI-tilstand
+*TST?                     // Kør selvtest (0=PASS, 1=FAIL)
+SYSTem:VERSION?           // Vis firmware og hardware version
+SYSTem:HELP               // Vis alle tilgængelige kommandoer
+--------------------------------------------------------------------------------
+4.4.3 Automatiserede målinger (datasamling)
+// Eksempel Python script til datalogging
+import serial
+import time
+
+ser = serial.Serial('COM3', 115200, timeout=1)
+ser.write(b"SYSTem:COMMunication ON\n")
+time.sleep(0.1)
+
+for i in range(100):
+    ser.write(b"MEASure:ESR?\n")
+    response = ser.readline().decode().strip()
+    print(f"{time.time()},{response}")
+    time.sleep(0.1)
+--------------------------------------------------------------------------------
+4.5 Kalibreringsprocedure
+VIGTIGT: Nuværende firmware version kræver genprogrammering for at gemme kalib-
+reringsdata.
+4.5.1 Forberedelse
+• 30 præcise referencemodstande i området 0-10 Ω med dokumenteret nøjagtighed
+• Multimeter til verifikation
+• Stabil arbejdstemperatur (20-25°C)
+--------------------------------------------------------------------------------
+4.5.2 Kalibreringstrin
+• Start kalibrering via SCPI: CALibrate
+• Følg instruktioner på LCD-display
+• For hver referencemodstand:
+  - Tilslut til kelvin-sockets
+  - Notér ADC-værdi vist i RAW_ADC tilstand
+  - Registrér par (ADC_værdi, Reference_ESR)
+• Efter dataindsamling:
+  - Rediger ESR-tabeller i firmwarekoden
+  - Genprogrammer ESP32 med opdaterede tabeller
+  - Verificér med referencemodstande
+--------------------------------------------------------------------------------
+4.5.3 Nødkalibrering (kun til test)
+• I nødstilfælde kan emergency_calibration() bruges
+• Genererer teoretiske tabelværdier (ikke præcise)
+• Kun til systemvalidering - ikke til præcisionsmåling
+--------------------------------------------------------------------------------
+
+§5. Vedligeholdelse og fejlfinding
+================================================================================
+5.1 Regelmæssigt vedligehold
+Dagligt (professionel brug):
+• Visuel inspektion af probeforbindelser
+• Test med kendt referencemodstand (f.eks. 1 Ω)
+• Rens probetips med isopropylalkohol
+
+Månedligt:
+• Fuldt systemtest med 3-5 referencemodstande
+• Kontroller fysiske probekabler for slid
+• Opdater fejllog hvis fejl er registreret
+
+Hver 6. måned:
+• Kalibrering med referencemodstande (hvis i brug)
+• Kontroller interne forbindelser
+• Verificér testsignal amplitude (skal være ≤0,1V p-p)
+--------------------------------------------------------------------------------
+5.2 Fejlfindingstabel
+Symptom                Mulig årsag                  Løsning
+---------------------- --------------------------- --------------------------------------------
+Ingen LCD-visning      Ingen strøm                 Tjek USB-forbindelse, tryk reset
+"ADC Error" på display ADS1115 kommunikationsfejl  Tjek I2C forbindelser, genstart
+Ustabile målinger      Dårlig probeforbindelse     Rens probetips, sikre god kontakt
+"Watchdog Reset"       Software fejl               Genstart system, kontakt support
+For høje/lave værdier  Ukalibreret                 Udfør kalibrering
+Ingen SCPI respons     Forkert kommunikationstilstand Tryk knap 2 for SCPI tilstand
+DDS-generator fejl     AD9850 initialiseringsfejl  Genstart, tjek level shifter
+--------------------------------------------------------------------------------
+5.3 Fejlkoder (seriel log)
+Fejlmeddelelser på seriel port følger formatet:
+ERROR [0x01]: ADS1115 init fejlet
+ERROR [0x10]: Ukendt state
+Almindelige fejlkoder:
+0x01: ADS1115 ADC initialiseringsfejl
+0x02: AD9850 DDS initialiseringsfejl
+0x03: I2C kommunikationsfejl
+0x10: State machine fejl
+0x20: Hukommelsesfejl
+--------------------------------------------------------------------------------
+5.4 Systemreset og genstart
+• Blød reset: Tryk begge knapper i 3 sekunder
+• Hård reset: Fjern og genindsæt USB-strøm
+• Fabriksnulstilling: Send SCPI kommando SYSTem:PRESet
+--------------------------------------------------------------------------------
+
+§6. Tekniske specifikationer
+================================================================================
+6.1 Måletekniske specifikationer
+Parameter          Specifikation               Kommentar
+------------------ --------------------------- ---------------------------------
+Måleområde         0 - 10 Ω                    Elektrolytkondensator ESR
+Opløsning          1 mΩ                        Effektiv ved 10 Ω fuld skala
+Nøjagtighed        ≤5%                         Efter kalibrering, 15-25°C
+Testfrekvens       100 kHz                     Sinus, 0° fase
+Testsignal         ≤0,1V p-p                   Sikker for in-circuit brug
+Måleteknik         4-leder Kelvin              Eliminerer ledningsmodstand
+Måletid            ≤100 ms                     Inklusive 64× oversampling
+Temperaturområde   15-25°C                     Ingen kompensation
+--------------------------------------------------------------------------------
+6.2 Strøm og fysiske specifikationer
+Parameter               Værdi
+---------------------- ----------
+Input spænding         5V DC via USB-C
+Strømforbrug           280 mA typisk
+Operativ temperatur    15-25°C
+Lagringstemperatur     -10°C til +60°C
+Dimensioner (B×H×D)   100×150×50 mm
+Vægt                   ~250 g (uden prober)
+PCB-lag                2-lags FR-4, 1,6 mm
+Display                16×2 karakter LCD med I2C
+--------------------------------------------------------------------------------
+6.3 SCPI-kommando reference
+Identifikation:
+*IDN? → Returnerer: ESR-METER,SRS-ESR-MIL-001,SN001,1.00
+
+Måling:
+MEASure:ESR? → Returnerer ESR i ohm (f.eks. 1.234m)
+
+Systemkontrol:
+SYSTem:PRESet → Nulstil alle indstillinger
+SYSTem:COMMunication ON/OFF → Aktiver/deaktiver SCPI
+SYSTem:VERSION? → Returnerer versionsinfo
+
+Displaykontrol:
+DISPlay:MODE RAW → Rå ADC visning
+DISPlay:MODE ESR → ESR resultat visning
+
+Test og vedligeholdelse:
+*TST? → Selvtest (0=PASS, 1=FAIL)
+SYSTem:HELP → Vis kommandooversigt
+CALibrate → Start kalibreringsrutine
+--------------------------------------------------------------------------------
+
+§7. Anvendelsesscenarier
+================================================================================
+7.1 Hobbybrug (U.HOB.001)
+Typisk brug: Reparation af forstærkere, strømforsyninger
+Anbefalede indstillinger: Normal mode, auto-PGA
+Tips: Brug RAW_ADC tilstand til at lære om signalniveauer
+--------------------------------------------------------------------------------
+7.2 Serviceværksted (U.SER.001)
+Typisk brug: Hurtig diagnostik, kunderapporter
+Anbefalede indstillinger: SCPI mode til automatisering
+Tips: Opret standard testprocedurer med kendte referenceværdier
+--------------------------------------------------------------------------------
+7.3 Undervisning (U.EDU.001, U.ENG.001)
+Typisk brug: Laboratorieøvelser, komponentkarakterisering
+Anbefalede indstillinger: Vis både rå data og beregnede værdier
+Tips: Dokumenter måleusikkerhed og kalibreringsproces
+--------------------------------------------------------------------------------
+7.4 Forskning og udvikling (U.RND.001)
+Typisk brug: Komponenttest, levetidsstudier
+Anbefalede indstillinger: SCPI med høj præcision
+Tips: Brug temperaturkompensation for avancerede målinger
+--------------------------------------------------------------------------------
+
+§8. Sikkerhedsanvisninger
+================================================================================
+8.1 Vigtige advarsler
+⚠️ FARE FOR ELEKTRISK STØD
+• Test ALDRIG levende kredsløbe
+• Sluk ALTID strømmen før måling
+• Aflad kondensatorer fuldstændigt
+
+⚠️ IN-CIRCUIT MÅLINGSBEGRÆNSNINGER
+• Testsignal er begrænset til 0,1V p-p
+• Parallelle komponenter kan forvrænge målinger
+• Målinger på printplader med aktiv kredsløb er FORBUDT
+
+⚠️ ESD-BESKYTTELSE
+• Opbevar instrumentet i ESD-sikker pose
+• Undgå statiske miljøer under brug
+• Brug jordingsarmbånd ved kalibrering
+--------------------------------------------------------------------------------
+8.2 Bortskaffelse og miljø
+• WEEE kategori 3: IT- og telekommunikationsudstyr
+• RoHS kompatibel: Ingen farlige stoffer
+• Genbrug: Følg lokal affaldshåndteringslovgivning
+• Demontage: Se hardwarekonstruktionsrapport for komponentseparation
+--------------------------------------------------------------------------------
+8.3 Garanti og support
+• Standardgaranti: 12 måneder på materiale- og fabrikationsfejl
+• Support: Teknisk support via dokumentationspakken
+• Kalibreringsinterval: Anbefalet 12 måneder eller efter temperaturudsving >10°C
+--------------------------------------------------------------------------------
+
+§9. Referencer og yderligere information
+================================================================================
+9.1 Relaterede dokumenter
+• SRS-ESR-MIL-001: Kravspecifikation (fuld kravliste)
+• HWKONS-ESR-MIL-001: Hardwarekonstruktionsrapport (netliste, PCB)
+• SW-ESR-MIL-002: Firmware dokumentation (kildekode)
+--------------------------------------------------------------------------------
+9.2 Tekniske referencer
+• Horowitz & Hill: "The Art of Electronics" (operationsforstærker-design)
+• Williams: "Analog Circuit Design" (præcisionsmåleteknik)
+• IPC-A-610: Acceptkriterier for elektroniksamlinger
+--------------------------------------------------------------------------------
+9.3 Kontakt og support
+• Dokumentationsfejl: Se GitHub repository for opdateringer
+• Tekniske spørgsmål: Konsulter hardware- og firmware-dokumentation
+• Kalibreringsspørgsmål: Referer til §4.5 i denne vejledning
+--------------------------------------------------------------------------------
+
+§10. Ændringshistorik
+================================================================================
+Version     Dato         Beskrivelse                             Forfatter
+---------- ------------ --------------------------------------- -----------------
+1.00       19-01-25     Første udgave - komplet brugervejledning Jan Engelbrecht
+                                                                 Pedersen
+--------------------------------------------------------------------------------
+
+Ophavsret (c) 2026 Jan Engelbrecht Pedersen
+
+Denne brugervejledning leveres "som den er" uden nogen form for garanti. Brugeren
+er selv ansvarlig for korrekt anvendelse af instrumentet ifølge gældende sikker-
+hedsstandarder.
+================================================================================

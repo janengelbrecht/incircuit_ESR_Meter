@@ -1,0 +1,272 @@
+==============================================================================================================================
+|                                                                                                                            |
+|                   Apparatkasse Konstruktionsrapport for In-Circuit ESR-Meter                                               |
+|                                                                                                                            |
+==============================================================================================================================
+| DOKUMENT ID:  MEC-ESR-MIL-001                                                                                              |
+| DATO:         20-01-25                                                                                                     |
+| VERSION:      1.00                                                                                                         |
+| SYSTEM:       IN-CIRCUIT ESR METER                                                                                         |
+| FORFATTER:    Jan Engelbrecht Pedersen                                                                                     |
+==============================================================================================================================
+| REFERENCER:   SRS-ESR-MIL-001, HWKONS-ESR-MIL-001, PCB-ESR-MIL-001                                                         |
+==============================================================================================================================
+
+==============================================================================================================================
+§1. Præcis sammenfatning
+==============================================================================================================================
+Denne rapport specificerer design, materialevalg, dimensioner og fabrikationsproces for apparatkassen til In-Circuit 
+ESR-meteret.
+Kassen er designet til mobil professionel brug med fokus på robusthed, ergonomi og funktionalitet svarende til et større 
+håndholdt multimeter. 
+Konstruktionen implementerer alle H.MEC.001-krav gennem et todelt design i slagfast ABS-plastic med en integreret,
+udfoldelig stabiliseringsfod, EM-afskærmning og fuld adgang til alle nødvendige interface-elementer.
+==============================================================================================================================
+
+==============================================================================================================================
+§2. Overordnet Designfilosofi & Kravopfyldelse
+==============================================================================================================================
+2.1 Designmål og brugerbehov
+------------------------------------------------------------------------------------------------------------------------------
+• Robusthed: Modstandsdygtig mod daglig brug, lette stød og ridser.
+• Mobilitet: Let vægt, kompakt formfactor, nem at transportere.
+• Funktion: Klart synlige interfacer (display, probestik, knapper, USB).
+• Stabilitet: Integreret, udfoldelig fod til stabil placering på bord.
+• Professionelt udseende: Rent, industriel æstetik med funktionel tekst.
+
+2.2 Direkte Kravreferencer (fra SRS-ESR-MIL-001)
+------------------------------------------------------------------------------------------------------------------------------
+• H.MEC.001.1: Kabinet i ABS plast med EM-afskærmning. (Opfyldt via ABS-husk og konduktiv belægning/indlæg).
+• H.MEC.001.2: 4x isolerede kelvin-prober med spidse tip. (Faciliteteret via frontpanel-connector).
+• H.MEC.001.3: Køling ved naturlig konvection. (Opfyldt via ventilationsåbninger i top/bund).
+• H.MEC.001.4: Maks. dimensioner 100x150x50 mm. (Opfyldt med samlet ydre mål på 98x148x45 mm).
+==============================================================================================================================
+
+==============================================================================================================================
+§3. Materialespecifikationer
+==============================================================================================================================
+3.1 Hovedmaterialer
+------------------------------------------------------------------------------------------------------------------------------
+Komponent           Materiale                         Specifikation / Begrundelse
+------------------------------------------------------------------------------------------------------------------------------
+Hus (Top & Bund)    ABS (Acrylonitril Butadien Styren) Slagfast, let, god overfladekvalitet, nem at sprojsestøbe.
+                    Farve: Sort (RAL 9005) eller Mørkegrå.
+Stabiliseringsfod   ABS                              Samme materiale for ensartet udseende og stivhed.
+Skruer              Rustfrit stål (A2/A4)            M3x6 mm panhead, modstandsdygtig overfor korrosion.
+EMI-Afskærmning     Konduktiv silicone/folie eller   Indsprøjtet/indlagt metalnet for at opnå Faraday-bur effekt.
+                    Metalliseret belægning
+Fødder/Gummiunderlæg Silikone eller TPE             Sort, for at forhindre skriden og beskytte underlag.
+
+3.2 Materialegenskaber og Standarder
+------------------------------------------------------------------------------------------------------------------------------
+• ABS: UL94-V0 flammehæmmende karakter. God kemisk modstandsdygtighed.
+• Overfladebehandling: Mat finish for at minimere fingeraftryk og ridser.
+• Miljøkrav: Alle termoplast-komponenter er RoHS og REACH kompatible (E.ENV.001).
+==============================================================================================================================
+
+==============================================================================================================================
+§4. Komponenter og Dimensioner
+==============================================================================================================================
+4.1 Komponentoversigt
+------------------------------------------------------------------------------------------------------------------------------
+1.  Topdel (Cover)
+2.  Bunddel (Base) – indeholder PCB-mounts og fods-mekanisme
+3.  Stabiliseringsfod – foldbar, integreret i bunddelen
+4.  Frontpanel – integreret i topdelen med udstansede åbninger
+5.  Bagpanel – integreret i topdelen med USB-C og ventilationsåbninger
+6.  Skruer (4x) M3x6 mm
+7.  Fødder/Gummiunderlag (4x) – limet på underside af bund
+
+4.2 Kritiske Dimensioner (Alle i mm)
+------------------------------------------------------------------------------------------------------------------------------
+Samlet Ydre Mål (L x B x H):          148.0 x 98.0 x 45.0
+    *Bemærk: Under H.MEC.001.4's grænse på 150x100x50.*
+
+Tydelige Vægtykkelser:
+    Top/Bund væg:                     2.5
+    Forstærkningsribber:              2.0
+    Kantafrunding (ekstern):          R3
+    Kantafrunding (intern):           R1.5
+
+Internt Rum (PCB-rum):
+    Længde:                           144.0
+    Bredde:                            94.0
+    Højde (Efter montering af PCB):    ~15.0
+    *Giver plads til PCB (1.6mm) + komponenter + luftgab.*
+
+Stabiliseringsfod:
+    Længde (udfoldet):                70.0
+    Bredde:                           15.0
+    Tykkelse:                         4.0
+    Rotationsvinkel (udfoldet):       ~60° fra bund
+
+4.3 Åbninger og Interface Placering (Front/Top)
+------------------------------------------------------------------------------------------------------------------------------
+• Display (LCD 16x2):           Rektangulært vindue: 72.0 x 18.0 mm. Centreret.
+• Kelvin Socket (4-pol):        Rundt hul, Ø 10.0 mm, til montering af panelmount socket.
+• Knapper (2x):                 Ø 6.0 mm runde huller, 20 mm center-til-center.
+• Power/Status LED:             Ø 3.0 mm lille hul.
+
+4.4 Åbninger og Interface Placering (Bag)
+------------------------------------------------------------------------------------------------------------------------------
+• USB-C Port:                   Rektangulær åbning: 9.0 x 3.5 mm.
+• Ventilation:                  Matrix af flere små huller (Ø 2.0 mm) over et areal på ~30x40 mm.
+
+4.5 Monteringspunkter (Bunddel)
+------------------------------------------------------------------------------------------------------------------------------
+• PCB Stiftsøjler:              4x M3 messing stiftsøjler, højde 10mm. Positioneret til at matche PCB's mounting holes.
+• Fod-Mekanismens Aksel:        Integreret aksel/stift, Ø 3.0 mm, til fodens rotation.
+• Skrueføringer (Top-skruer):   4x selv-gevindende skruegange integreret i ABS.
+==============================================================================================================================
+
+==============================================================================================================================
+§5. Konstruktions- og Monteringsdetaljer
+==============================================================================================================================
+5.1 Stabiliseringsfod Mekanisme
+------------------------------------------------------------------------------------------------------------------------------
+Design:           Foden formes som en enkelt arm, der drejer om en integreret aksel i bunden.
+Mekanisme:        "Snap-fit" friktionslås i både inde- og udfoldet position. Ingen ekstra fjedre eller låse nødvendig.
+Arbejdsgang:      Foden presseles let ud fra sin indebyggede lomme ved at trykke på den ene ende.
+Materiale:        Samme ABS som huset, med forstærkning omkring akselpunktet.
+
+5.2 EMI-Afskærmning Implementering
+------------------------------------------------------------------------------------------------------------------------------
+Metode 1 (Foretrukket): Konduktiv belægning sprojsestøbt direkte på indersiden af top- og bunddelen.
+Metode 2:               Selvklæbende kobberfolie eller konduktiv film anbragt efter samling.
+Forbindelse:            Afskærmningen på top og bund skal være elektrisk forbundet via fjedrende kontakter eller
+                        konduktivt gasket omkring skruepunkterne. Afskærmningen jordes til PCB's AGND ved et enkelt punkt.
+
+5.3 Monteringssekvens
+------------------------------------------------------------------------------------------------------------------------------
+1.  Forberedelse: Monter Kelvin-socket, USB-C port og eventuelle andre panelkomponenter i topdelens åbninger.
+2.  PCB Montage: Fastgør PCB'en til de 4 stiftsøjler i bunddelen med M3x6 mm skruer og møtrikker.
+3.  Forbindelse: Tilslut display-flexkabel, probekabler og USB-port til PCB.
+4.  Afskærmning: Anbring den konduktive afskærmning i topdelen (hvis ikke integreret).
+5.  Samling: Placer topdelen over bunddelen, sikrer at alle PCB-forbindelser og knapper passer.
+6.  Fastgørelse: Fastgør top- og bunddel med de 4 M3x6 mm skruer gennem huller i bunden og ind i gevindet i toppen.
+7.  Afslutning: Lim de 4 silikonefodder på hjørnerne af bunddelen.
+==============================================================================================================================
+
+==============================================================================================================================
+§6. Fabrikationsproces
+==============================================================================================================================
+6.1 Sprojsestøbning (Primær Proces)
+------------------------------------------------------------------------------------------------------------------------------
+Værktøj:           To-delt aluminiumsstøbeforme (en for top, en for bund + fod).
+Proces:            ABS granulat smeltes og indsprøjtes under højt tryk i formen.
+Efterbehandling:   Afgasing, kantafretning (defashing), og kvalitetskontrol for sink og deformation.
+Tid/Enhed:         Cyklustid ca. 45-60 sekunder pr. komponent ved serieproduktion.
+
+6.2 Dekoration og Mærkning
+------------------------------------------------------------------------------------------------------------------------------
+Teknik:            Silketryk eller laser-markering.
+Placering (Front): "ESR METER" logo over display. Enhedssymbol (Ω) ved socket.
+Placering (Side/Bag): Modelnr., serienummer, CE-mærkning, fabrikationsdato.
+Farve:             Hvid eller lysgrå tekst på mørk baggrund.
+
+6.3 Underleverandører og Kvalitetskontrol
+------------------------------------------------------------------------------------------------------------------------------
+•   Støbning: Specialiseret plastsprojsestøber.
+•   Hardware: Standard M3 skruer og stiftsøjler fra industrileverandør.
+•   Gummiunderlag: Silikonefabrikant.
+•   Kvalitetskontrol: Stikprøvebaseret visuel og funktionel inspektion af hver batch.
+    Tester for: Støbefejl, korrekt dimensionering, funktion af fods-mekanisme.
+==============================================================================================================================
+
+==============================================================================================================================
+§7. Testbarhed og Vedligeholdelse
+==============================================================================================================================
+7.1 Adgang til Internt
+------------------------------------------------------------------------------------------------------------------------------
+Let Adgang:        Fjerning af 4 skruer giver fuld adgang til PCB og interne forbindelser.
+Servicevenlig:     Ingen skjulte clips eller komplicerede låse. Alle forbindelser er plug/socket eller loddet.
+
+7.2 Testpunkter (Udefra)
+------------------------------------------------------------------------------------------------------------------------------
+•   USB-C Port: Bruges til båke strøm, kommunikation og firmware-opdatering.
+•   Kelvin Socket: Primær testinterface. Adgang til alle 4 ledere.
+
+7.3 Robusthedstest (E.TRA.001)
+------------------------------------------------------------------------------------------------------------------------------
+•   Faldtest: Enhed skal overleve fald fra 1 meter på hårdt underlag (konkret) i sin lukkede tilstand.
+•   Slidtest: Overfladen skal modstå 1000+ cyklusser af normal håndtering uden synlig slid.
+==============================================================================================================================
+
+==============================================================================================================================
+§8. Tegnings- og Filreferencer
+==============================================================================================================================
+8.1 Leverede Designfiler
+------------------------------------------------------------------------------------------------------------------------------
+•   3D CAD Model:              [Filnavn].STEP / .IGES (Komplet samling)
+•   2D Produktionstegninger:   [Filnavn]_Top.pdf, [Filnavn]_Base.pdf, [Filnavn]_Foot.pdf
+        - Viser alle kritiske dimensioner, tolerancer og sektionsvisninger.
+•   Renderings:                Fotorealistiske billeder fra flere vinkler.
+•   BOM (Mekanisk):            Komplet liste over alle ikke-elektroniske komponenter med leverandør-info.
+
+8.2 Tolerancer
+------------------------------------------------------------------------------------------------------------------------------
+•   Lineære dimensioner:       ±0.2 mm (Standard for sprojsestøbning)
+•   Hulpålignelse:             ±0.1 mm
+•   Vinkel på fod:             ±2°
+==============================================================================================================================
+
+==============================================================================================================================
+§9. Opsummering og Konklusion
+==============================================================================================================================
+9.1 Kravopfyldelse Konklusion
+------------------------------------------------------------------------------------------------------------------------------
+•   H.MEC.001.1 (ABS + EM-afskærmning): ✓ Opfyldt via ABS-konstruktion med konduktiv belægning.
+•   H.MEC.001.2 (Kelvin-prober): ✓ Faciliteteret via dedikeret frontpanel-connector.
+•   H.MEC.001.3 (Naturlig konvektion): ✓ Opfyldt via ventilationsåbninger i kabinettet.
+•   H.MEC.001.4 (Max. dimensioner): ✓ Samlet mål (148x98x45 mm) er under specifikationen.
+•   Mobil brug: ✓ Letvægtsdesign med integreret stabiliseringsfod gør enheden velegnet til feltarbejde.
+
+9.2 Forventet Performance og Holdbarhed
+------------------------------------------------------------------------------------------------------------------------------
+•   Robusthed: Designet til at modstå daglig professionel brug.
+•   Ergonomi: Kompakt størrelse og let vægt gør det nemt at bære og bruge.
+•   Thermal: Ventilation sikrer tilstrækkelig køling til alle komponenter under normal drift.
+•   Estetik: Rent, industrielt design projicerer professionel kvalitet.
+
+9.3 Fremtidige Iterationer
+------------------------------------------------------------------------------------------------------------------------------
+•   Materiale: Overvej PC/ABS-blend for endnu højere slagstyrke.
+•   IP-vurdering: Design om for at opnå IP54 støv- og sprøjtwandbeskyttelse ved tilføjelse af gaskets.
+•   Tilbehør: Design af transporttaske eller beskyttelsescover.
+==============================================================================================================================
+
+==============================================================================================================================
+§10. Epistemiske Begrænsninger
+==============================================================================================================================
+•   Fabrikationsvariation: Endelige dimensioner og fit kan variere baseret på udvalgt støberi og værktøjstilstand.
+•   Afskærmningseffektivitet: Den faktiske EMI-dæmpning afhænger af den konkrete implementering af den konduktive belægning
+    og kvaliteten af jordforbindelserne.
+•   Fodens levetid: Friktionsmekanismens holdbarhed over >10.000 cyklusser skal verificeres i praksis.
+==============================================================================================================================
+
+==============================================================================================================================
+§11. Praktisk Implementering - Næste Trin
+========================================================================================================================------
+1.   Udpeg Støberi: Find og kvalificer en sprojsestøber med erfaring i præcisions- og EM-afskærmningsvenlige dele.
+2.   Prototypeværktøj: Fremstil prototypeværktøj (soft tooling) til validering af fit, form og funktion.
+3.   Prøveenumre: Fremstil 5-10 prøveenumre (fra prototypeværktøj) for fysisk test og integration med PCB.
+4.   Test og Validering: Udfør faldtest, ESD-test (via probeforbindelser), og termisk køringstest.
+5.   Serieproduktion: Efter succesfuld prototype, invester i hårde produktionsværktøjer til serieaf 50+ enheder.
+==============================================================================================================================
+
+==============================================================================================================================
+§12. Bilag & Reference
+========================================================================================================================------
+12.1 Referencemateriale
+------------------------------------------------------------------------------------------------------------------------------
+•   SRS-ESR-MIL-001: Kravspecifikation for systemet.
+•   PCB-ESR-MIL-001: PCB Layout Rapport for interne dimensioner og placering.
+•   IPC-2221A: Generic Standard on Printed Board Design.
+•   Leverandørdatasheets for ABS-granulat (f.eks. från BASF eller Covestro).
+
+12.2 Kontaktinformation
+------------------------------------------------------------------------------------------------------------------------------
+•   CAD Designer: Jan Engelbrecht Pedersen, hanzimand@gmail.com, 61 71 82 05
+•   Støberikontakt: [Ved valg]
+•   Projektansvarlig: Jan Engelbrecht Pedersen
+==============================================================================================================================
