@@ -2729,258 +2729,258 @@ void run_test_program(void) {
  * ==========================================================================================================================
  */
 /*
-===========================================================================================
-DEVELOPER GUIDE – VIDEREUDVIKLING AF ESR-METER FIRMWARE
-===========================================================================================
-
-FORMÅL
-------
-Denne kommentarsektion er målrettet udviklere, der skal overtage, vedligeholde
-eller videreudvikle denne firmware. 
-
-Den beskriver arkitektur, underudviklede dele samt konkrete 
-forbedrings- og videreudviklingsmuligheder.
-
-----------------------------------------------------------------------------------------------------
-1. OVERORDNET ARKITEKTUR
-----------------------------------------------------------------------------------------------------
-
-Firmwaren er opbygget som én samlet .ino-fil, men er logisk opdelt i følgende lag:
-
-- HAL (Hardware Abstraction Layer)
-  * AD9850 DDS-generator
-  * ADS1115 ADC
-  * LCD-display
-  * Knapper
-  * Watchdog
-
-- Måle- og signalbehandling
-  * ADC single-shot
-  * 64× oversampling
-  * Automatisk PGA-range selection
-
-- ESR-beregning
-  * Tabelbaseret opslag
-  * Lineær interpolation
-  * PGA-afhængige kalibreringstabeller
-
-- UI
-  * LCD-visning
-  * Knapbaseret tilstandsskift
-
-- Kommunikation
-  * Normal seriel output
-  * SCPI-protokol (delvist implementeret)
-
-- State machine
-  * Central styring af hele systemets flow
-
-State machine er den logiske kerne og kontrollerer alle systemtilstande via
-currentState.
-
-----------------------------------------------------------------------------------------------------
-2. VIGTIGE INDGANGSPUNKTER I KODEN
-----------------------------------------------------------------------------------------------------
-
-- setup():
-  Initialiserer al hardware, state machine, konfiguration og DDS-signal.
-
-- loop():
-  Kører kontinuerligt:
-    * knap-check
-    * state machine
-    * SCPI-behandling
-    * watchdog reset
-
-- state_machine_update():
-  Dispatcher systemets tilstande (IDLE, MEASURE, CALCULATE, DISPLAY, SCPI, ERROR).
-
-- adc_read_oversampled():
-  Kritisk funktion for målekvalitet (64× oversampling).
-
-- esr_calculate():
-  Central ESR-beregningsfunktion baseret på tabeller og interpolation.
-
-----------------------------------------------------------------------------------------------------
-3. KENDTE BEGRÆNSNINGER (VIGTIGT)
-----------------------------------------------------------------------------------------------------
-
-- ESR-tabeller er PLADSHOLDERE
-  De nuværende tabeller er ikke baseret på reel kalibrering og skal udskiftes.
-
-- Kalibrering kræver genprogrammering
-  adc_calibrate() kan ikke gemme data persistent.
-
-- SCPI er ikke fuldt implementeret
-  Flere handlers er stubbe eller tomme.
-
-- Ingen persistent lagring
-  Konfiguration og kalibrering gemmes ikke i NVS / EEPROM.
-
-- Monolitisk filstruktur
-  Hele systemet ligger i én .ino-fil, hvilket hæmmer skalerbarhed.
-
-----------------------------------------------------------------------------------------------------
-4. UNDERUDVIKLEDE DELE – HØJ PRIORITET
-----------------------------------------------------------------------------------------------------
-
-4.1 ESR-TABELLER & KALIBRERING
-------------------------------
-Nuværende:
-- Hardcodede PROGMEM-tabeller
-- Ingen runtime-kalibrering
-- Ingen temperaturkompensation i praksis
-
-Mulig videreudvikling:
-- Kalibreringsrutine styret via SCPI
-- Gem kalibreringsdata i ESP32 NVS
-- Understøt flere kalibreringsprofiler
-- Automatisk regenerering af interpolationstabeller
-
-Gevinst:
-- Måleteknisk valide ESR-resultater
-- Ingen behov for recompilering
-- Felt- og servicekalibrering mulig
-
-----------------------------------------------------------------------------------------------------
-4.2 SCPI-KOMMUNIKATION
-----------------------
-Nuværende:
-- Basal parser
-- Enkelte kommandoer
-- Manglende fejl- og statusrapportering
-
-Mulig videreudvikling:
-- Fuldt SCPI-sæt, fx:
-    * MEAS:ESR?
-    * CONF:PGA AUTO|MAN
-    * CAL:START
-    * SYST:ERR?
-    * *IDN?
-- Kommando-hjælp og syntaksvalidering
-- Fejlkø og statusregistre
-
-Gevinst:
-- Integration i automatiserede testsystemer
-- PC-/LabVIEW-/Python-styring
-- Produktions- og laboratorieegnet instrument
-
-----------------------------------------------------------------------------------------------------
-4.3 STATE MACHINE
------------------
-Nuværende:
-- Alle states er defineret
-- Flere handlers er minimale
-
-Mulig videreudvikling:
-- Event-baserede state transitions
-- Timeout-håndtering pr. state
-- Klar recovery-strategi i ERROR-state
-
-Gevinst:
-- Mere deterministisk systemadfærd
-- Lettere fejlfinding
-- Bedre robusthed
-
-----------------------------------------------------------------------------------------------------
-4.4 DISPLAY & UI
-----------------
-Nuværende:
-- Meget simpel visning
-- Kun to display modes
-- Begrænset brugerfeedback
-
-Mulig videreudvikling:
-- Simpelt menu-system
-- Statuslinje (PGA, mode, fejl)
-- Progress-visning ved kalibrering
-- Fejlmeddelelser på display
-
-Gevinst:
-- Markant bedre brugeroplevelse
-- Mindre afhængighed af seriel debug
-
-----------------------------------------------------------------------------------------------------
-5. KODEFORBEDRINGER (ARKITEKTUR & KVALITET)
-----------------------------------------------------------------------------------------------------
-
-5.1 MODULOPDELING (ANBEFALET)
------------------------------
-Opdel koden i:
-- hal_*.h / hal_*.cpp
-- adc.h / adc.cpp
-- esr.h / esr.cpp
-- scpi.h / scpi.cpp
-- ui.h / ui.cpp
-
-Fordele:
-- Bedre vedligeholdelse
-- Mulighed for enhedstest
-- Klar ansvarsopdeling
-
-----------------------------------------------------------------------------------------------------
-5.2 FEJLHÅNDTERING & LOGGING
-----------------------------
-Mulige tiltag:
-- Central fejlstruktur
-- Fejlkoder via SCPI (SYST:ERR?)
-- Konsistent brug af error_handler()
-
-Gevinst:
-- Hurtigere fejlfinding
-- Mere professionelt system
-
-----------------------------------------------------------------------------------------------------
-5.3 ADC & SIGNALBEHANDLING
---------------------------
-Mulige forbedringer:
-- Medianfilter før oversampling
-- Outlier rejection
-- Aktiv temperaturkompensation
-- Dynamisk justering af oversampling
-
-Gevinst:
-- Mere stabile og reproducerbare målinger
-
-----------------------------------------------------------------------------------------------------
-6. ANBEFALET VIDEREUDVIKLINGS-ROADMAP
-----------------------------------------------------------------------------------------------------
-
-Fase 1 – Måleteknisk korrekthed
-- Rigtige kalibreringsdata
-- Persistent lagring
-- Temperaturkompensation
-
-Fase 2 – Kommunikation
-- Fuldt SCPI-interface
-- PC-integration
-
-Fase 3 – Arkitektur
-- Modulopdeling
-- Testbarhed
-
-Fase 4 – Brugeroplevelse
-- Menusystem
-- Status- og fejlvisning
-
-----------------------------------------------------------------------------------------------------
-KONKLUSION
-----------------------------------------------------------------------------------------------------
-
-Firmwaren er arkitektonisk solid og veldokumenteret, men flere centrale dele
-er bevidst efterladt ufærdige. Det gør projektet velegnet som:
-
-- Videreudviklingsplatform
-- Professionel prototype
-- Reference- og undervisningsprojekt
-
-Det største forbedringspotentiale ligger i:
-- Kalibrering
-- SCPI
-- Persistent konfiguration
-- Modulopdeling
-
-============================================================================================
+*===========================================================================================
+*DEVELOPER GUIDE – VIDEREUDVIKLING AF ESR-METER FIRMWARE
+*===========================================================================================
+*
+*FORMÅL
+*------
+*Denne kommentarsektion er målrettet udviklere, der skal overtage, vedligeholde
+*eller videreudvikle denne firmware. 
+*
+*Den beskriver arkitektur, underudviklede dele samt konkrete 
+*forbedrings- og videreudviklingsmuligheder.
+*
+*----------------------------------------------------------------------------------------------------
+*1. OVERORDNET ARKITEKTUR
+*----------------------------------------------------------------------------------------------------
+*
+*Firmwaren er opbygget som én samlet .ino-fil, men er logisk opdelt i følgende lag:
+*
+*- HAL (Hardware Abstraction Layer)
+*  * AD9850 DDS-generator
+*  * ADS1115 ADC
+*  * LCD-display
+*  * Knapper
+*  * Watchdog
+*
+*- Måle- og signalbehandling
+*  * ADC single-shot
+*  * 64× oversampling
+*  * Automatisk PGA-range selection
+*
+*- ESR-beregning
+*  * Tabelbaseret opslag
+*  * Lineær interpolation
+*  * PGA-afhængige kalibreringstabeller
+*
+*- UI
+*  * LCD-visning
+*  * Knapbaseret tilstandsskift
+*
+*- Kommunikation
+*  * Normal seriel output
+*  * SCPI-protokol (delvist implementeret)
+*
+*- State machine
+*  * Central styring af hele systemets flow
+*
+*State machine er den logiske kerne og kontrollerer alle systemtilstande via
+*currentState.
+*
+*----------------------------------------------------------------------------------------------------
+*2. VIGTIGE INDGANGSPUNKTER I KODEN
+*----------------------------------------------------------------------------------------------------
+*
+*- setup():
+*  Initialiserer al hardware, state machine, konfiguration og DDS-signal.
+*
+*- loop():
+*  Kører kontinuerligt:
+*    * knap-check
+*    * state machine
+*    * SCPI-behandling
+*    * watchdog reset
+*
+*- state_machine_update():
+*  Dispatcher systemets tilstande (IDLE, MEASURE, CALCULATE, DISPLAY, SCPI, ERROR).
+*
+*- adc_read_oversampled():
+*  Kritisk funktion for målekvalitet (64× oversampling).
+*
+*- esr_calculate():
+*  Central ESR-beregningsfunktion baseret på tabeller og interpolation.
+*
+*----------------------------------------------------------------------------------------------------
+*3. KENDTE BEGRÆNSNINGER (VIGTIGT)
+*----------------------------------------------------------------------------------------------------
+*
+*- ESR-tabeller er PLADSHOLDERE
+*  De nuværende tabeller er ikke baseret på reel kalibrering og skal udskiftes.
+*
+*- Kalibrering kræver genprogrammering
+*  adc_calibrate() kan ikke gemme data persistent.
+*
+*- SCPI er ikke fuldt implementeret
+*  Flere handlers er stubbe eller tomme.
+*
+*- Ingen persistent lagring
+*  Konfiguration og kalibrering gemmes ikke i NVS / EEPROM.
+*
+*- Monolitisk filstruktur
+*  Hele systemet ligger i én .ino-fil, hvilket hæmmer skalerbarhed.
+*
+*----------------------------------------------------------------------------------------------------
+*4. UNDERUDVIKLEDE DELE – HØJ PRIORITET
+*----------------------------------------------------------------------------------------------------
+*
+*4.1 ESR-TABELLER & KALIBRERING
+*------------------------------
+*Nuværende:
+*- Hardcodede PROGMEM-tabeller
+*- Ingen runtime-kalibrering
+*- Ingen temperaturkompensation i praksis
+*
+*Mulig videreudvikling:
+*- Kalibreringsrutine styret via SCPI
+*- Gem kalibreringsdata i ESP32 NVS
+*- Understøt flere kalibreringsprofiler
+*- Automatisk regenerering af interpolationstabeller
+*
+*Gevinst:
+*- Måleteknisk valide ESR-resultater
+*- Ingen behov for recompilering
+*- Felt- og servicekalibrering mulig
+*
+*----------------------------------------------------------------------------------------------------
+*4.2 SCPI-KOMMUNIKATION
+*----------------------
+*Nuværende:
+*- Basal parser
+*- Enkelte kommandoer
+*- Manglende fejl- og statusrapportering
+*
+*Mulig videreudvikling:
+*- Fuldt SCPI-sæt, fx:
+*    * MEAS:ESR?
+*    * CONF:PGA AUTO|MAN
+*    * CAL:START
+*    * SYST:ERR?
+*    * *IDN?
+*- Kommando-hjælp og syntaksvalidering
+*- Fejlkø og statusregistre
+*
+*Gevinst:
+*- Integration i automatiserede testsystemer
+*- PC-/LabVIEW-/Python-styring
+*- Produktions- og laboratorieegnet instrument
+*
+*----------------------------------------------------------------------------------------------------
+*4.3 STATE MACHINE
+*-----------------
+*Nuværende:
+*- Alle states er defineret
+*- Flere handlers er minimale
+*
+*Mulig videreudvikling:
+*- Event-baserede state transitions
+*- Timeout-håndtering pr. state
+*- Klar recovery-strategi i ERROR-state
+*
+*Gevinst:
+*- Mere deterministisk systemadfærd
+*- Lettere fejlfinding
+*- Bedre robusthed
+*
+*----------------------------------------------------------------------------------------------------
+*4.4 DISPLAY & UI
+*----------------
+*Nuværende:
+*- Meget simpel visning
+*- Kun to display modes
+*- Begrænset brugerfeedback
+*
+*Mulig videreudvikling:
+*- Simpelt menu-system
+*- Statuslinje (PGA, mode, fejl)
+*- Progress-visning ved kalibrering
+*- Fejlmeddelelser på display
+*
+*Gevinst:
+*- Markant bedre brugeroplevelse
+*- Mindre afhængighed af seriel debug
+*
+*----------------------------------------------------------------------------------------------------
+*5. KODEFORBEDRINGER (ARKITEKTUR & KVALITET)
+*----------------------------------------------------------------------------------------------------
+*
+*5.1 MODULOPDELING (ANBEFALET)
+*-----------------------------
+*Opdel koden i:
+*- hal_*.h / hal_*.cpp
+*- adc.h / adc.cpp
+*- esr.h / esr.cpp
+*- scpi.h / scpi.cpp
+*- ui.h / ui.cpp
+*
+*Fordele:
+*- Bedre vedligeholdelse
+*- Mulighed for enhedstest
+*- Klar ansvarsopdeling
+*
+*----------------------------------------------------------------------------------------------------
+*5.2 FEJLHÅNDTERING & LOGGING
+*----------------------------
+*Mulige tiltag:
+*- Central fejlstruktur
+*- Fejlkoder via SCPI (SYST:ERR?)
+*- Konsistent brug af error_handler()
+*
+*Gevinst:
+*- Hurtigere fejlfinding
+*- Mere professionelt system
+*
+*----------------------------------------------------------------------------------------------------
+*5.3 ADC & SIGNALBEHANDLING
+*--------------------------
+*Mulige forbedringer:
+*- Medianfilter før oversampling
+*- Outlier rejection
+*- Aktiv temperaturkompensation
+*- Dynamisk justering af oversampling
+*
+*Gevinst:
+*- Mere stabile og reproducerbare målinger
+*
+*----------------------------------------------------------------------------------------------------
+*6. ANBEFALET VIDEREUDVIKLINGS-ROADMAP
+*----------------------------------------------------------------------------------------------------
+*
+*Fase 1 – Måleteknisk korrekthed
+*- Rigtige kalibreringsdata
+*- Persistent lagring
+*- Temperaturkompensation
+*
+*Fase 2 – Kommunikation
+*- Fuldt SCPI-interface
+*- PC-integration
+*
+*Fase 3 – Arkitektur
+*- Modulopdeling
+*- Testbarhed
+*
+*Fase 4 – Brugeroplevelse
+*- Menusystem
+*- Status- og fejlvisning
+*
+*----------------------------------------------------------------------------------------------------
+*KONKLUSION
+*----------------------------------------------------------------------------------------------------
+*
+*Firmwaren er arkitektonisk solid og veldokumenteret, men flere centrale dele
+*er bevidst efterladt ufærdige. Det gør projektet velegnet som:
+*
+*- Videreudviklingsplatform
+*- Professionel prototype
+*- Reference- og undervisningsprojekt
+*
+*Det største forbedringspotentiale ligger i:
+*- Kalibrering
+*- SCPI
+*- Persistent konfiguration
+*- Modulopdeling
+*
+*============================================================================================
 */
 
 // ============================================================================================================================
