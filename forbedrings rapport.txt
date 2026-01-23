@@ -1,0 +1,2453 @@
+===============================================================================
+|                                                                             |
+|                   FORBEDRINGSMULIGHEDER FOR ESR-METER PROJEKT               |
+|                                                                             |
+===============================================================================
+| DOKUMENT ID:  FORB-ESR-MIL-001                                              |
+| DATO:         19-01-25                                                      |
+| VERSION:      1.00                                                          |
+| SYSTEM:       INCIRCUIT ESR METER                                           |
+| FORFATTER:    Jan Engelbrecht Pedersen                                      |
+===============================================================================
+
+===============================================================================
+§1.  PRÆCIS SAMMENFATNING
+===============================================================================
+Denne rapport identificerer og prioriterer forbedringsmuligheder for 
+In-Circuit ESR-meteret baseret på analyse af eksisterende dokumentation. 
+Hovedfokus er på at løse kritiske mangler i kalibreringsprocessen, 
+forbedre brugervenligheden og udvide systemfunktionaliteten, så projektet 
+opnår fuld produktions- og kommercialiseringsparathed. Rapporten bygger på 
+analyse af firmware, hardwarekonstruktion og systemfunktionsanalyse.
+
+===============================================================================
+§2.  DEFINITIONER OG PRÆCISERING
+===============================================================================
+2.1  Reference til eksisterende dokumentation
+Rapporten refererer til følgende dokumenter:
+- Kravspecifikation SRS-ESR-MIL-001
+- Firmware dokument SW-ESR-MIL-002 (ESR_Meter_V2.txt)
+- Hardwarekonstruktionsrapport HWKONS-ESR-MIL-001
+- Systemfunktionsanalyse SYS-ESR-MIL-001
+
+2.2  Prioriteringsniveauer
+🔴  Høj prioritet: Kritisk for funktionalitet eller kommercialisering
+🟡  Mellem prioritet: Væsentlig for brugeroplevelse eller nøjagtighed
+🟢  Lav prioritet: Ønskværdig forbedring eller avanceret funktion
+
+===============================================================================
+§3.  FAGLIG ANALYSE AF FORBEDRINGSMULIGHEDER
+===============================================================================
+3.1  KALIBRERINGSSYSTEM - HØJ PRIORITET 🔴
+_______________________________________________________________________________
+3.1.1  Nuværende problemstilling
+Kalibreringstabeller er hardcodet i PROGMEM og kræver genprogrammering for 
+hver kalibrering (adc_calibrate()). Dette er uacceptabelt for et kommercielt 
+produkt og begrænser feltanvendelsen.
+
+3.1.2  Foreslået løsning
+Implementering af persistent lagring i ESP32s Non-Volatile Storage (NVS) 
+med dedikeret kalibreringsrutine styret via SCPI eller brugerflade.
+
+3.1.3  Teknisk implementering
+/**
+ * @file calibration_storage.cpp
+ * @brief Implementering af persistent kalibreringsdata-lagring til ESR-meter
+ * 
+ * @details
+ * Dette modul håndterer lagring og indlæsning af kalibreringsdata til ESR-måling
+ * på ESP32-platformen ved hjælp af NVS (Non-Volatile Storage).
+ * Data gemmes i key-value par for hver PGA-forstærkertrin og målepunkt.
+ * 
+ * @author Dit System
+ * @date December 2023
+ * @version 1.0
+ * @copyright MIT License
+ * 
+ * @see Preferences.h
+ * @see https://docs.espressif.com/projects/arduino-esp32/en/latest/api/preferences.html
+ */
+
+#include <Preferences.h>  // Inkluder ESP32 NVS abstraktionsbibliotek
+
+/**
+ * @brief Global Preferences instans til NVM adgang
+ * @details
+ * Oprettes globalt for at kunne deles mellem flere funktioner
+ * og undgå unødvendig initialisering
+ */
+Preferences calibration;  // Global instans af Preferences-klassen
+
+/**
+ * @brief Gemmer kalibreringstabel til NVS (Non-Volatile Storage)
+ * 
+ * @param[in] pga_index Index for PGA-forstærker (0-3 typisk)
+ * 
+ * @details
+ * Funktionen gemmer en hel kalibreringstabel for en specifik PGA-indstilling.
+ * Hver tabelindgang gemmes som to separate key-value par:
+ * - ADC-værdien gemmes som 32-bit heltal
+ * - ESR-værdien gemmes som 32-bit float
+ * 
+ * @note
+ * - Nøgleformat: "pgaX_adcY" og "pgaX_esrY" hvor X=PGA index, Y=tabelindeks
+ * - Funktionen åbner og lukker NVS for hvert kald - ikke optimal for hyppige kald
+ * - Fejlhåndtering: Ingen eksplicit fejlretur - antager altid succes
+ * 
+ * @warning
+ * - TABEL_ENTRIES skal være defineret på kompileringstidspunktet
+ * - esrTables skal være defineret globalt med korrekt dimensioner
+ * 
+ * @par Eksempel:
+ * @code
+ * // Gem kalibrering for PGA-indstilling 2
+ * save_calibration_to_nvs(2);
+ * @endcode
+ * 
+ * @return void
+ * 
+ * @see load_calibration_from_nvs()
+ * @see Preferences::begin()
+ * @see Preferences::putInt()
+ * @see Preferences::putFloat()
+ * @see Preferences::end()
+ */
+void save_calibration_to_nvs(uint8_t pga_index) {
+    calibration.begin("esr-cal", false);  // Åbn NVS namespace "esr-cal" i skrivtilstand (false = R/W)
+    
+    char key[32];                         // Buffer til nøglenavne (max 32 tegn)
+    
+    for(int i = 0; i < TABLE_ENTRIES; i++) {  // Iterer gennem alle kalibreringspunkter
+        snprintf(key, sizeof(key), "pga%d_adc%d", pga_index, i);  // Formatér nøgle for ADC-værdi
+        calibration.putInt(key, esrTables[pga_index][i].adcValue); // Gem ADC-værdi som integer
+        
+        snprintf(key, sizeof(key), "pga%d_esr%d", pga_index, i);   // Formatér nøgle for ESR-værdi
+        calibration.putFloat(key, esrTables[pga_index][i].esrValue); // Gem ESR-værdi som float
+    }
+    
+    calibration.end();  // Luk NVS for at garantere data er skrevet og frigive ressourcer
+}
+
+/**
+ * @brief Indlæser kalibreringstabel fra NVS (Non-Volatile Storage)
+ * 
+ * @param[in] pga_index Index for PGA-forstærker (0-3 typisk)
+ * 
+ * @details
+ * Funktionen indlæser en kalibreringstabel for en specifik PGA-indstilling fra NVS.
+ * Hvis data ikke findes i NVS, sættes værdierne til standardværdier (0 og 0.0).
+ * 
+ * @note
+ * - Standardværdier anvendes ved manglende nøgler
+ * - Funktionen åbner NVS i read-only tilstand for at forhindre utilsigtede skrivninger
+ * - Memory layout skal være identisk med save funktion for at undgå korruption
+ * 
+ * @warning
+ * - Der er ingen validering af indlæste data for gyldighedsområder
+ * - TABEL_ENTRIES skal matche det der blev gemt - ellers buffer overflow
+ * 
+ * @par Eksempel:
+ * @code
+ * // Indlæs kalibrering for PGA-indstilling 2
+ * load_calibration_from_nvs(2);
+ * @endcode
+ * 
+ * @return void
+ * 
+ * @see save_calibration_to_nvs()
+ * @see Preferences::begin()
+ * @see Preferences::getInt()
+ * @see Preferences::getFloat()
+ * @see Preferences::end()
+ */
+void load_calibration_from_nvs(uint8_t pga_index) {
+    calibration.begin("esr-cal", true);   // Åbn NVS namespace "esr-cal" i læsetilstand (true = Read-Only)
+    
+    char key[32];                         // Buffer til nøglenavne (max 32 tegn)
+    
+    for(int i = 0; i < TABLE_ENTRIES; i++) {  // Iterer gennem alle kalibreringspunkter
+        snprintf(key, sizeof(key), "pga%d_adc%d", pga_index, i);  // Formatér nøgle for ADC-værdi
+        esrTables[pga_index][i].adcValue = calibration.getInt(key, 0);  // Indlæs ADC-værdi, default=0
+        
+        snprintf(key, sizeof(key), "pga%d_esr%d", pga_index, i);   // Formatér nøgle for ESR-værdi
+        esrTables[pga_index][i].esrValue = calibration.getFloat(key, 0.0);  // Indlæs ESR-værdi, default=0.0
+    }
+    
+    calibration.end();  // Luk NVS og frigiv interne ressourcer
+}
+
+// FORBEDRINGSFORSLAG 1: Fejlhåndtering
+bool save_calibration_to_nvs(uint8_t pga_index) {
+    if(pga_index >= MAX_PGA_INDEX) return false;  // Valider input
+    
+    if(!calibration.begin("esr-cal", false)) {    // Tjek om NVS åbnes
+        Serial.println("Fejl: Kunne ikke åbne NVS");
+        return false;
+    }
+    // ... resten af koden ...
+    calibration.end();
+    return true;  // Returner status
+}
+
+// FORBEDRINGSFORSLAG 2: Batch-operation
+void save_all_calibrations() {
+    calibration.begin("esr-cal", false);
+    for(uint8_t pga = 0; pga < NUM_PGA_SETTINGS; pga++) {
+        save_calibration_for_pga(pga);  // Undgå at åbne/lukke for hver PGA
+    }
+    calibration.end();
+}
+
+// FORBEDRINGSFORSLAG 3: Data integritet
+void save_calibration_with_checksum(uint8_t pga_index) {
+    calibration.begin("esr-cal", false);
+    
+    // Gem data
+    // ...
+    
+    // Beregn og gem checksum
+    uint16_t crc = calculate_crc(esrTables[pga_index], TABLE_ENTRIES);
+    char crc_key[16];
+    snprintf(crc_key, sizeof(crc_key), "pga%d_crc", pga_index);
+    calibration.putUShort(crc_key, crc);
+    
+    calibration.end();
+}
+
+// Fast nøgleformat - undgår snprintf overhead
+void save_calibration_fast(uint8_t pga_index) {
+    calibration.begin("esr-cal", false);
+    
+    char key[12];  // Nøjagtig størrelse: "pga0_adc255" = 11 tegn + null
+    
+    for(int i = 0; i < TABLE_ENTRIES; i++) {
+        // Manuelt konstruer nøgle - hurtigere end snprintf
+        sprintf(key, "pga%u_adc%u", pga_index, i);
+        calibration.putInt(key, esrTables[pga_index][i].adcValue);
+        
+        sprintf(key, "pga%u_esr%u", pga_index, i);
+        calibration.putFloat(key, esrTables[pga_index][i].esrValue);
+    }
+    
+    calibration.end();
+}
+
+
+
+
+3.1.4  Forventet gevinst
+✅ Feltkalibrering uden genprogrammering
+✅ Flere kalibreringsprofiler mulige
+✅ Acceptabelt for masseproduktion
+✅ SCPI-integration: CALibrate:SAVE og CALibrate:LOAD
+
+_______________________________________________________________________________
+3.2  TEMPERATURKOMPENSATION - MÆLLEM PRIORITET 🟡
+3.2.1  Nuværende problemstilling
+Funktionen temperature_compensate_esr() er implementeret, men ikke anvendt. 
+Ingen temperaturmåling foretages, hvilket påvirker nøjagtigheden ved 
+afvigelser fra 25°C reference.
+
+3.2.2  Foreslået løsning
+Integration af DS18B20 temperatursensor via OneWire-protokol med regelmæssig 
+temperaturmåling og automatisk kompensation af ESR-værdier.
+
+3.2.3  Teknisk implementering
+
+/**
+ * @file temperature_sensor.cpp
+ * @brief Temperaturmålingsmodul med DS18B20 sensor og kompensation for ESR-målinger
+ * 
+ * @details
+ * Dette modul integrerer DS18B20 temperatursensor til temperaturkompensation
+ * af ESR-målinger. Målinger foretages med mellemrum for at minimere påvirkning
+ * af hovedmålecyklus.
+ * 
+ * @note
+ * - DS18B20 kommunikerer via OneWire protokol (1-Wire)
+ * - Temperaturaflæsning er tidskrævende (~750ms for 12-bit opløsning)
+ * - Målinger udføres asynkront for ikke at blokere hovedloop
+ * 
+ * @author Dit System
+ * @date December 2023
+ * @version 1.0
+ * @copyright MIT License
+ * 
+ * @see OneWire.h
+ * @see DallasTemperature.h
+ * @see https://github.com/milesburton/Arduino-Temperature-Control-Library
+ */
+
+#include <OneWire.h>              // 1-Wire kommunikationsbibliotek
+#include <DallasTemperature.h>    // DS18B20 specifikt bibliotek
+
+/**
+ * @def TEMP_SENSOR_PIN
+ * @brief GPIO pin for DS18B20 dataforbindelse
+ * @details
+ * Pin 4 er typisk valgt som standard for OneWire enheder.
+ * Bemærk: Der kræves pull-up modstand (4.7kΩ) mellem data og 3.3V.
+ */
+#define TEMP_SENSOR_PIN 4         // Definerer hvilken GPIO pin der bruges til temperatursensoren
+
+/**
+ * @brief OneWire instans for kommunikation med sensor
+ * @details
+ * Initialiserer OneWire biblioteket med den angivne pin.
+ * Denne instans håndterer den lavniveau 1-Wire kommunikation.
+ */
+OneWire oneWire(TEMP_SENSOR_PIN); // Opret OneWire objekt på specificeret pin
+
+/**
+ * @brief DallasTemperature instans for DS18B20 specifik funktionalitet
+ * @details
+ * Omslutter OneWire kommunikation med højere-niveau temperaturfunktioner.
+ * Understøtter flere sensorer på samme bus (med unikke 64-bit adresser).
+ */
+DallasTemperature tempSensor(&oneWire); // Opret temperatur sensor objekt med OneWire reference
+
+/**
+ * @brief Global temperaturvariabel i Celsius
+ * @details
+ * Aktuel temperatur værdi opdateret asynkront.
+ * Standardværdi 25.0°C antages indtil første måling.
+ * @warning Globale variable kan skabe race conditions i multi-threaded miljøer
+ */
+float current_temperature = 25.0; // Global variabel til at holde nuværende temperatur, standard 25°C
+
+/**
+ * @brief Initialiserer temperatursensor i setup()
+ * @details
+ * Kaldes én gang ved opstart for at initialisere hardware og bibliotek.
+ * Konfigurerer DS18B20 med standardindstillinger (12-bit opløsning).
+ * 
+ * @note
+ * - tempSensor.begin() scanner 1-Wire bussen for sensorer
+ * - Returnerer antal fundne sensorer (normalt 1)
+ * - Sensorens adresse registreres automatisk
+ * 
+ * @par Eksempel:
+ * @code
+ * void setup() {
+ *   Serial.begin(115200);
+ *   tempSensor.begin();  // Initialiser sensor
+ * }
+ * @endcode
+ * 
+ * @see DallasTemperature::begin()
+ */
+void setup() {
+    // ... eksisterende initialiseringskode ...
+    tempSensor.begin();           // Initialiser DS18B20 sensor og OneWire bus
+}
+
+/**
+ * @brief Temperaturmålingsloop der køres periodisk
+ * @details
+ * Funktionen håndterer asynkron temperaturmåling hver 10. cyklus.
+ * Benytter requestTemperatures() for at starte konvertering og 
+ * getTempCByIndex() for at hente resultatet.
+ * 
+ * @note
+ * - requestTemperatures() starter konvertering (non-blocking ved brug af delay())
+ * - Konverteringstid afhænger af opløsning (typisk 750ms for 12-bit)
+ * - getTempCByIndex(0) henter temperatur fra første sensor på bussen
+ * - Temperaturaflæsning kan introducere jitter i hovedloop timing
+ * 
+ * @warning
+ * - Ingen fejlhåndtering hvis sensor ikke responderer
+ * - Statisk tæller kan overløbe efter 255 iterationer (uint8_t)
+ * - Ingen timeout ved manglende sensorsvar
+ * 
+ * @par Flow:
+ * 1. Tæller inkrementeres hver cyklus
+ * 2. Ved 10 cyklusser: Anmod om temperaturmåling
+ * 3. Hent temperaturværdi
+ * 4. Nulstil tæller
+ * 
+ * @see DallasTemperature::requestTemperatures()
+ * @see DallasTemperature::getTempCByIndex()
+ */
+void loop() {
+    // ... eksisterende hovedkode ...
+    
+    static uint8_t temp_counter = 0;  // Statisk tæller for at måle temperatur med mellemrum
+    if(temp_counter++ >= 10) {        // Hvis tæller når 10 (hver 10. måling)
+        tempSensor.requestTemperatures();            // Send anmodning om temperaturkonvertering til sensor
+        current_temperature = tempSensor.getTempCByIndex(0);  // Hent temperatur i °C fra første sensor
+        temp_counter = 0;                            // Nulstil tæller
+    }
+}
+
+/**
+ * @brief ESR beregningshåndterer med temperaturkompensation
+ * @details
+ * Denne funktion kaldes når en ny ESR-måling skal beregnes.
+ * Den kombinerer rå ADC-måling med temperaturkompensation
+ * for at producere en nøjagtig ESR-værdi.
+ * 
+ * @note
+ * - Bruger rå ADC-værdi og aktuelt PGA-indstilling
+ * - Temperaturkompensation korrigerer for termisk drift i komponenter
+ * - Kompensationsalgoritme implementeres i temperature_compensate_esr()
+ * 
+ * @par Beregningskæde:
+ * 1. Rå ESR beregnes fra ADC-værdi og PGA-indstilling
+ * 2. Temperaturkompensation anvendes på rå ESR
+ * 3. Resultat gemmes og tilstandsmaskine opdateres
+ * 
+ * @warning
+ * - current_temperature skal være opdateret inden kald
+ * - temperature_compensate_esr() skal være implementeret
+ * - Ingen validering af rå data før beregning
+ * 
+ * @see esr_calculate()
+ * @see temperature_compensate_esr()
+ * @see STATE_UPDATE_DISPLAY
+ */
+void state_calculate_esr_handler(void) {
+    float raw_esr = esr_calculate(currentPgaSetting, rawAdcValue);  // Beregn ukompenseret ESR fra rå ADC-værdi
+    // Anvend temperaturkompensation
+    calculatedEsr = temperature_compensate_esr(raw_esr, current_temperature);  // Korriger ESR for temperaturvirkning
+    
+    newMeasurementAvailable = true;          // Flag nyt målingsresultat som klar
+    currentState = STATE_UPDATE_DISPLAY;     // Skift tilstand til visning af resultat
+}
+
+/**
+ * FORBEDRET VERSION: Asynkron temperaturmåling med state machine
+ */
+
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+#define TEMP_SENSOR_PIN 4
+#define TEMP_READ_INTERVAL_MS 5000  // 5 sekunder mellem målinger
+
+OneWire oneWire(TEMP_SENSOR_PIN);
+DallasTemperature tempSensor(&oneWire);
+float current_temperature = 25.0;
+
+// Tilstandsmaskine for asynkron temperaturmåling
+enum TempState {
+    TEMP_IDLE,
+    TEMP_REQUEST_SENT,
+    TEMP_WAITING
+};
+
+TempState tempState = TEMP_IDLE;
+unsigned long lastTempRequest = 0;
+unsigned long tempSampleInterval = TEMP_READ_INTERVAL_MS;
+
+void setup() {
+    tempSensor.begin();
+    tempSensor.setWaitForConversion(false);  // Gør requestTemperatures() non-blocking
+    tempSensor.setResolution(10);            // 10-bit opløsning = 188ms konvertering
+}
+
+void loop() {
+    // ... eksisterende kode ...
+    
+    handle_temperature_measurement();  // Kald asynkron temperaturhåndtering
+}
+
+/**
+ * @brief Asynkron temperaturmålingshåndtering
+ */
+void handle_temperature_measurement() {
+    static unsigned long lastTempRead = 0;
+    unsigned long currentMillis = millis();
+    
+    switch(tempState) {
+        case TEMP_IDLE:
+            if(currentMillis - lastTempRead >= tempSampleInterval) {
+                tempSensor.requestTemperatures();
+                lastTempRequest = currentMillis;
+                tempState = TEMP_REQUEST_SENT;
+            }
+            break;
+            
+        case TEMP_REQUEST_SENT:
+            // Vent minimum konverteringstid (afhænger af opløsning)
+            if(currentMillis - lastTempRequest >= 190) {  // 190ms for 10-bit
+                current_temperature = tempSensor.getTempCByIndex(0);
+                lastTempRead = currentMillis;
+                tempState = TEMP_IDLE;
+                
+                // Valider temperaturværdi
+                if(current_temperature == DEVICE_DISCONNECTED_C) {
+                    current_temperature = 25.0;  // Fallback værdi
+                }
+            }
+            break;
+    }
+}
+
+/**
+ * ROBUST IMPLEMENTERING: Fejlhåndtering og kalibrering
+ */
+
+// Temperatursensor status tracking
+typedef struct {
+    float temperature;
+    uint8_t error_count;
+    bool sensor_present;
+    unsigned long last_valid_read;
+} temp_sensor_status_t;
+
+temp_sensor_status_t temp_status = {
+    .temperature = 25.0,
+    .error_count = 0,
+    .sensor_present = false,
+    .last_valid_read = 0
+};
+
+/**
+ * @brief Initialiserer og verifierer temperatursensor
+ */
+bool init_temperature_sensor() {
+    tempSensor.begin();
+    
+    // Tjek om sensor er til stede
+    DeviceAddress tempDeviceAddress;
+    if(!tempSensor.getAddress(tempDeviceAddress, 0)) {
+        Serial.println("Advarsel: DS18B20 ikke fundet");
+        temp_status.sensor_present = false;
+        return false;
+    }
+    
+    temp_status.sensor_present = true;
+    
+    // Konfigurer sensor
+    tempSensor.setResolution(10);
+    tempSensor.setWaitForConversion(false);
+    
+    // Læs sensor type
+    Serial.print("Sensor type: ");
+    switch(tempSensor.getDeviceType(tempDeviceAddress)) {
+        case 0x10: Serial.println("DS18S20"); break;
+        case 0x28: Serial.println("DS18B20"); break;
+        case 0x22: Serial.println("DS1822"); break;
+        default: Serial.println("Ukendt"); break;
+    }
+    
+    return true;
+}
+
+/**
+ * @brief Temperaturkompensation med fejltolerance
+ */
+float temperature_compensate_esr_with_fallback(float raw_esr, float temperature) {
+    // Tjek om temperaturværdi er gyldig
+    if(!temp_status.sensor_present || 
+       temperature < -55.0 || 
+       temperature > 125.0 ||
+       temperature == DEVICE_DISCONNECTED_C) {
+        
+        // Brug sidste gyldige temperatur eller standard
+        if(temp_status.last_valid_read > 0 && 
+           millis() - temp_status.last_valid_read < 300000) {  // 5 minutter
+            temperature = temp_status.temperature;
+        } else {
+            temperature = 25.0;  // Standard rumtemperatur
+        }
+    }
+    
+    return temperature_compensate_esr(raw_esr, temperature);
+}
+
+/**
+ * YDELSESOPTIMERET: Minimér OneWire kommunikation
+ */
+
+// Cache sensor adresse for hurtigere adgang
+DeviceAddress tempSensorAddress;
+bool address_cached = false;
+
+/**
+ * @brief Hurtig temperaturmåling med cached adresse
+ */
+float read_temperature_fast() {
+    if(!address_cached) {
+        if(!tempSensor.getAddress(tempSensorAddress, 0)) {
+            return DEVICE_DISCONNECTED_C;
+        }
+        address_cached = true;
+    }
+    
+    tempSensor.requestTemperaturesByAddress(tempSensorAddress);
+    delay(190);  // 10-bit konverteringstid
+    
+    return tempSensor.getTempC(tempSensorAddress);
+}
+
+/**
+ * @brief ESR beregning med optimeret temperaturhåndtering
+ */
+void state_calculate_esr_handler_optimized(void) {
+    // Beregn rå ESR
+    float raw_esr = esr_calculate(currentPgaSetting, rawAdcValue);
+    
+    // Kun kompensér hvis temperatur er gyldig og stabil
+    static float last_valid_temp = 25.0;
+    if(temp_status.sensor_present && 
+       fabs(current_temperature - last_valid_temp) < 10.0) {  // Max 10°C ændring
+        
+        calculatedEsr = temperature_compensate_esr(raw_esr, current_temperature);
+        last_valid_temp = current_temperature;
+    } else {
+        // Brug sidste gyldige temperatur
+        calculatedEsr = temperature_compensate_esr(raw_esr, last_valid_temp);
+    }
+    
+    // Statistisk filtrering (glidende gennemsnit)
+    static float esr_filter_buffer[5] = {0};
+    static uint8_t filter_index = 0;
+    
+    esr_filter_buffer[filter_index] = calculatedEsr;
+    filter_index = (filter_index + 1) % 5;
+    
+    // Beregn glidende gennemsnit
+    float sum = 0;
+    for(int i = 0; i < 5; i++) {
+        sum += esr_filter_buffer[i];
+    }
+    calculatedEsr = sum / 5;
+    
+    newMeasurementAvailable = true;
+    currentState = STATE_UPDATE_DISPLAY;
+}
+
+
+3.2.4  Forventet gevinst
+✅ Forbedret nøjagtighed over temperaturområdet
+✅ Professionel feature til laboratoriebrug
+✅ SCPI-kommando: SYSTem:TEMPerature?
+
+_______________________________________________________________________________
+3.3  BRUGERFLADE OG MENUSYSTEM - MÆLLEM PRIORITET 🟡
+3.3.1  Nuværende problemstilling
+Begrænset til 2 knapper og simpel 2-linje visning. Mangler menusystem for 
+adgang til kalibrering, indstillinger og systeminfo uden SCPI.
+
+3.3.2  Foreslået løsning
+Implementering af simpelt state-baseret menusystem med følgende tilstande:
+- MENU_MEASURE: Normal måling
+- MENU_CALIBRATE: Kalibreringsmenu
+- MENU_SETTINGS: Systemindstillinger
+- MENU_INFO: Systeminformation
+
+3.3.3  Teknisk implementering
+typedef enum {
+MENU_MEASURE, // Normal måling
+MENU_CALIBRATE, // Kalibrering
+MENU_SETTINGS, // Indstillinger
+MENU_INFO // System info
+} MenuState;
+
+MenuState currentMenu = MENU_MEASURE;
+
+void display_menu(void) {
+lcd.clear();
+switch(currentMenu) {
+    case MENU_MEASURE:
+        display_esr_result(calculatedEsr, rawAdcValue, currentPgaSetting);
+        break;
+        
+    case MENU_CALIBRATE:
+        lcd.setCursor(0, 0);
+        lcd.print("CALIBRATION");
+        lcd.setCursor(0, 1);
+        lcd.print("Follow prompts");
+        break;
+        
+    case MENU_SETTINGS:
+        lcd.setCursor(0, 0);
+        lcd.print("Mode:");
+        lcd.print(displayMode == DISPLAY_MODE_RAW_ADC ? "RAW" : "ESR");
+        lcd.setCursor(0, 1);
+        lcd.print("Comm:");
+        lcd.print(commMode == COMM_MODE_SCPI ? "SCPI" : "NORM");
+        break;
+        
+    case MENU_INFO:
+        lcd.setCursor(0, 0);
+        lcd.print("FW:");
+        lcd.print(FIRMWARE_VERSION);
+        lcd.setCursor(0, 1);
+        lcd.print("T:");
+        lcd.print(current_temperature, 1);
+        lcd.print("C");
+        break;
+}
+}
+
+// Knaphåndtering udvides til menu-navigation
+void button1_handler(void) {
+// Kort tryk: skift menu
+currentMenu = (MenuState)((currentMenu + 1) % 4);
+}
+
+void button2_handler(void) {
+// Kort tryk: vælg/aktiver menu-punkt
+// Lang tryk: tilbage til måling
+}
+
+
+3.3.4  Forventet gevinst
+✅ Bedre brugeroplevelse
+✅ Adgang til flere funktioner uden SCPI
+✅ Nemmere kalibrering og konfiguration
+
+_______________________________________________________________________________
+3.4  UDVIDET SCPI KOMMANDOSÆT - LAV PRIORITET 🟢
+3.4.1  Nuværende problemstilling
+Basis SCPI-kommandoer implementeret, men mangler mange nyttige kommandoer for 
+fuld integration i automatiserede testsystemer.
+
+3.4.2  Foreslået løsning
+Udvidelse af scpi_handle_advanced() med følgende kommandoer:
+- MEASure:CONTinuous? - Kontinuerlige målinger
+- CONF:PGA <2|4|8|16> - Manuel PGA indstilling
+- SYSTem:TEMPerature? - Læs temperatur
+- CALibrate:SAVE/LOAD - Gem/hent kalibrering
+
+3.4.3  Teknisk implementering
+/**
+ * @file scpi_handler_advanced.cpp
+ * @brief Avancerede SCPI kommandoer for ESR-målesystem
+ * 
+ * @details
+ * Udvidelse af SCPI (Standard Commands for Programmable Instruments) interface
+ * med avancerede kommandoer for måling, konfiguration, kalibrering og systemovervågning.
+ * 
+ * @note
+ * - SCPI er et standardiseret instrumentkommunikationsprotokol baseret på ASCII
+ * - Kommandoer er case-insensitive per standard, men implementeringen her er case-sensitive
+ * - Alle responser følger SCPI format: <værdi> eller <status> efterfulgt af linjeskift
+ * 
+ * @author Dit System
+ * @date December 2023
+ * @version 1.1
+ * @copyright MIT License
+ * 
+ * @see IEEE 488.2 Standard
+ * @see SCPI Consortium Standard Commands
+ */
+
+/**
+ * @brief Håndterer avancerede SCPI kommandoer
+ * 
+ * @param[in] command Modtaget SCPI kommando streng (null-termineret)
+ * 
+ * @details
+ * Funktionen parser og eksekverer avancerede SCPI kommandoer ud over basis-set.
+ * Understøtter kommandoer i flere kategorier:
+ * - Måling: Kontinuerlige målinger
+ * - Konfiguration: PGA-forstærkerindstilling
+ * - System: Temperaturaflæsning
+ * - Kalibrering: Gem/hent kalibreringsdata
+ * 
+ * @note
+ * - Funktionen returnerer ved første matchende kommando (switch-case stil)
+ * - Ukendte kommandoer resulterer i fejlrespons
+ * - Strengsammenligninger er case-sensitive (afvikling af performance årsager)
+ * 
+ * @warning
+ * - Ingen buffer overflow check på kommando input
+ * - Ingen timeout på lange operationer (fx MEAS:CONT)
+ * - Ingen fejlhåndtering ved NVM fejl i kalibrering
+ * 
+ * @par Kommando Reference:
+ * | Kommando | Type | Beskrivelse | Eksempel Respons |
+ * |----------|------|-------------|------------------|
+ * | MEASure:CONTinuous? | Query | 10 kontinuerlige målinger | "1.2345\\n1.2346\\n..." |
+ * | CONFigure:PGA <værdi> | Set | Sæt PGA forstærkning | "OK" eller "ERROR" |
+ * | SYSTem:TEMPerature? | Query | Aktuel temperatur | "25.00" |
+ * | CALibrate:SAVE | Set | Gem kalibrering til NVS | "OK - Calibration saved" |
+ * | CALibrate:LOAD | Set | Hent kalibrering fra NVS | "OK - Calibration loaded" |
+ * 
+ * @return void
+ * 
+ * @see scpi_handle_basic()
+ * @see scpi_response()
+ */
+void scpi_handle_advanced(const char* command) {
+    // ... eksisterende basiskommandoer ...
+
+    // MEAS:CONT? - Kontinuerlige målinger
+    if (strcmp(command, "MEASure:CONTinuous?") == 0) {  // Sammenlign kommando med kontinuerlig måling forespørgsel
+        for(int i = 0; i < 10; i++) {                    // Udfør 10 målinger i sekvens
+            state_measure_adc_handler();                 // Eksekver ADC-måling tilstandshåndterer
+            state_calculate_esr_handler();               // Eksekver ESR-beregning tilstandshåndterer
+            
+            char response[32];                           // Buffer til formateret respons (4 decimaler + overhead)
+            snprintf(response, sizeof(response), "%.4f", calculatedEsr);  // Formatér ESR med 4 decimaler
+            scpi_response(response);                     // Send respons til SCPI klient
+            
+            delay(100);                                  // Vent 100ms mellem målinger (10 Hz sampling)
+        }
+        return;                                          // Afslut kommandohåndtering efter færdig
+    }
+
+    // CONF:PGA <2|4|8|16> - Manuel PGA indstilling
+    if (strncmp(command, "CONFigure:PGA ", 14) == 0) {  // Sammenlign starten af kommandoen (14 tegn)
+        int pga_value = atoi(command + 14);              // Konverter numerisk værdi efter mellemrum til integer
+        switch(pga_value) {                              // Switch baseret på indstillet PGA værdi
+            case 2:  currentPgaSetting = PGA_2X_INDEX; break;   // Sæt til 2x forstærkning indeks
+            case 4:  currentPgaSetting = PGA_4X_INDEX; break;   // Sæt til 4x forstærkning indeks
+            case 8:  currentPgaSetting = PGA_8X_INDEX; break;   // Sæt til 8x forstærkning indeks
+            case 16: currentPgaSetting = PGA_16X_INDEX; break;  // Sæt til 16x forstærkning indeks
+            default:                                        // Hvis værdi ikke er en af de tilladte
+                scpi_response("ERROR: Invalid PGA (2|4|8|16)");  // Send fejlrespons med tilladte værdier
+                return;                                     // Afslut kommandohåndtering ved fejl
+        }
+        scpi_response("OK");                               // Bekræft succesfuld indstilling
+        return;                                            // Afslut kommandohåndtering
+    }
+
+    // SYST:TEMP? - Læs temperatur
+    if (strcmp(command, "SYSTem:TEMPerature?") == 0) {    // Sammenlign kommando med temperaturforespørgsel
+        char response[16];                                // Buffer til temperaturrespons (2 decimaler + overhead)
+        snprintf(response, sizeof(response), "%.2f", current_temperature);  // Formatér temperatur med 2 decimaler
+        scpi_response(response);                          // Send temperaturværdi til klient
+        return;                                           // Afslut kommandohåndtering
+    }
+
+    // CAL:SAVE - Gem kalibrering
+    if (strcmp(command, "CALibrate:SAVE") == 0) {         // Sammenlign kommando med gem kalibrering
+        for(int pga = 0; pga < NUM_PGA_SETTINGS; pga++) {  // Iterer gennem alle PGA-indstillinger
+            save_calibration_to_nvs(pga);                 // Gem kalibrering for hver PGA-indstilling til NVS
+        }
+        scpi_response("OK - Calibration saved");          // Bekræft gemning med beskrivende tekst
+        return;                                           // Afslut kommandohåndtering
+    }
+
+    // CAL:LOAD - Hent kalibrering
+    if (strcmp(command, "CALibrate:LOAD") == 0) {         // Sammenlign kommando med indlæs kalibrering
+        for(int pga = 0; pga < NUM_PGA_SETTINGS; pga++) {  // Iterer gennem alle PGA-indstillinger
+            load_calibration_from_nvs(pga);               // Indlæs kalibrering for hver PGA-indstilling fra NVS
+        }
+        scpi_response("OK - Calibration loaded");         // Bekræft indlæsning med beskrivende tekst
+        return;                                           // Afslut kommandohåndtering
+    }
+
+    scpi_response("ERROR: Unknown command");              // Ingen match - send ukendt kommando fejl
+    return;                                               // Afslut kommandohåndtering
+}
+
+/**
+ * FORBEDRET VERSION: Fuld SCPI kompatibilitet med fejlhåndtering
+ */
+
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+/**
+ * @brief Case-insensitive SCPI kommando sammenligning
+ * @param str1 Første streng (typisk kommando)
+ * @param str2 Anden streng (typisk template)
+ * @return bool True hvis matcher (ignorerer case)
+ */
+bool scpi_equals(const char* str1, const char* str2) {
+    while(*str1 && *str2) {
+        if(tolower(*str1++) != tolower(*str2++)) {
+            return false;
+        }
+    }
+    return (*str1 == *str2);  // Begge skal være null-terminerede
+}
+
+/**
+ * @brief Henter numerisk parameter fra kommando med validering
+ * @param cmd Hele kommando strengen
+ * @param prefix Kommandopræfiks (fx "CONFigure:PGA ")
+ * @param min Minimum tilladt værdi
+ * @param max Maximum tilladt værdi
+ * @param[out] value Udgangsparameter for værdi
+ * @return bool True hvis succes, False ved fejl
+ */
+bool scpi_get_numeric_param(const char* cmd, const char* prefix, 
+                           int min, int max, int* value) {
+    // Tjek om kommando starter med præfiks
+    size_t prefix_len = strlen(prefix);
+    if(strncasecmp(cmd, prefix, prefix_len) != 0) {
+        return false;
+    }
+    
+    // Valider at resten af strengen er numerisk
+    const char* param_str = cmd + prefix_len;
+    char* endptr;
+    long val = strtol(param_str, &endptr, 10);
+    
+    // Tjek for konverteringsfejl eller ekstra tegn
+    if(endptr == param_str || *endptr != '\0') {
+        return false;
+    }
+    
+    // Tjek for overflow og range
+    if(val < min || val > max || val > INT_MAX) {
+        return false;
+    }
+    
+    *value = (int)val;
+    return true;
+}
+
+/**
+ * @brief Forbedret avanceret SCPI håndtering
+ */
+void scpi_handle_advanced_improved(const char* command) {
+    // ... eksisterende kommandoer ...
+    
+    // MEASure:CONTinuous? [<count>] - Kontinuerlige målinger med valgfrit antal
+    if(strncasecmp(command, "MEAS:CONT?", 10) == 0) {
+        int count = 10;  // Standard værdi
+        const char* param = strchr(command, ' ');
+        
+        if(param != NULL) {
+            char* endptr;
+            long val = strtol(param, &endptr, 10);
+            if(endptr != param && val > 0 && val <= 1000) {  // Max 1000 målinger
+                count = (int)val;
+            }
+        }
+        
+        // Asynkron måling - ikke blokerende
+        scpi_response("START");  // Indikerer måling start
+        
+        for(int i = 0; i < count; i++) {
+            if(!perform_measurement_cycle()) {  // Bruger tilstandsmaskine
+                scpi_response("ERROR: Measurement failed");
+                return;
+            }
+            
+            char response[32];
+            snprintf(response, sizeof(response), "%.4f", calculatedEsr);
+            scpi_response(response);
+            
+            // Non-blocking delay
+            unsigned long start = millis();
+            while(millis() - start < 100) {
+                handle_other_tasks();  // Tillad andre opgaver
+            }
+        }
+        
+        scpi_response("END");  // Indikerer måling afsluttet
+        return;
+    }
+    
+    // CONFigure:PGA <2|4|8|16|AUTO>
+    if(strncasecmp(command, "CONF:PGA ", 9) == 0) {
+        const char* param = command + 9;
+        
+        if(strcasecmp(param, "AUTO") == 0) {
+            enable_auto_pga(true);
+            scpi_response("OK - Auto PGA enabled");
+            return;
+        }
+        
+        int pga_value;
+        if(!scpi_get_numeric_param(command, "CONF:PGA ", 2, 16, &pga_value)) {
+            scpi_response("ERROR: Invalid PGA. Use 2|4|8|16|AUTO");
+            return;
+        }
+        
+        // Tjek om værdi er potens af 2
+        if((pga_value & (pga_value - 1)) != 0) {  // Ikke potens af 2
+            scpi_response("ERROR: PGA must be 2,4,8,16 or AUTO");
+            return;
+        }
+        
+        switch(pga_value) {
+            case 2: currentPgaSetting = PGA_2X_INDEX; break;
+            case 4: currentPgaSetting = PGA_4X_INDEX; break;
+            case 8: currentPgaSetting = PGA_8X_INDEX; break;
+            case 16: currentPgaSetting = PGA_16X_INDEX; break;
+        }
+        enable_auto_pga(false);  // Manuel indstilling
+        scpi_response("OK");
+        return;
+    }
+    
+    // SYSTem:TEMPerature?
+    if(scpi_equals(command, "SYST:TEMP?") || 
+       scpi_equals(command, "SYSTEM:TEMPERATURE?")) {
+        // Tjek sensortilstand først
+        if(!temp_sensor_available()) {
+            scpi_response("ERROR: Temperature sensor not available");
+            return;
+        }
+        
+        // Valider temperaturværdi
+        if(current_temperature < -55.0 || current_temperature > 125.0) {
+            scpi_response("ERROR: Temperature out of range");
+            return;
+        }
+        
+        char response[32];
+        snprintf(response, sizeof(response), "%.2f°C", current_temperature);
+        scpi_response(response);
+        return;
+    }
+    
+    // CALibrate:SAVE [<pga>]
+    if(strncasecmp(command, "CAL:SAVE", 8) == 0) {
+        if(strlen(command) == 8) {  // Ingen parameter - gem alle
+            bool success = true;
+            for(int pga = 0; pga < NUM_PGA_SETTINGS; pga++) {
+                if(!save_calibration_to_nvs_with_verify(pga)) {
+                    success = false;
+                    break;
+                }
+            }
+            
+            if(success) {
+                scpi_response("OK - All calibrations saved");
+            } else {
+                scpi_response("ERROR: Failed to save calibration");
+            }
+            return;
+        }
+        
+        // Gem specifik PGA
+        int pga_index;
+        if(scpi_get_numeric_param(command, "CAL:SAVE ", 0, 
+                                  NUM_PGA_SETTINGS-1, &pga_index)) {
+            if(save_calibration_to_nvs_with_verify(pga_index)) {
+                char response[64];
+                snprintf(response, sizeof(response), 
+                        "OK - PGA %d calibration saved", pga_index);
+                scpi_response(response);
+            } else {
+                scpi_response("ERROR: Calibration save failed");
+            }
+        } else {
+            scpi_response("ERROR: Invalid PGA index");
+        }
+        return;
+    }
+    
+    // CALibrate:LOAD [<pga>]
+    if(strncasecmp(command, "CAL:LOAD", 8) == 0) {
+        if(strlen(command) == 8) {  // Ingen parameter - indlæs alle
+            bool success = true;
+            for(int pga = 0; pga < NUM_PGA_SETTINGS; pga++) {
+                if(!load_calibration_from_nvs_with_verify(pga)) {
+                    success = false;
+                    break;
+                }
+            }
+            
+            if(success) {
+                scpi_response("OK - All calibrations loaded");
+            } else {
+                scpi_response("WARN: Some calibrations missing or invalid");
+            }
+            return;
+        }
+        
+        // Indlæs specifik PGA
+        int pga_index;
+        if(scpi_get_numeric_param(command, "CAL:LOAD ", 0, 
+                                  NUM_PGA_SETTINGS-1, &pga_index)) {
+            if(load_calibration_from_nvs_with_verify(pga_index)) {
+                char response[64];
+                snprintf(response, sizeof(response), 
+                        "OK - PGA %d calibration loaded", pga_index);
+                scpi_response(response);
+            } else {
+                scpi_response("WARN: Calibration not found or invalid");
+            }
+        } else {
+            scpi_response("ERROR: Invalid PGA index");
+        }
+        return;
+    }
+    
+    // CALibrate:DELETE [<pga>|ALL] - Slet kalibrering
+    if(strncasecmp(command, "CAL:DEL", 7) == 0) {
+        const char* param = command + 7;
+        while(*param == ' ') param++;  // Skip mellemrum
+        
+        if(strcasecmp(param, "ALL") == 0) {
+            if(delete_all_calibrations()) {
+                scpi_response("OK - All calibrations deleted");
+            } else {
+                scpi_response("ERROR: Failed to delete calibrations");
+            }
+            return;
+        }
+        
+        // Slet specifik PGA
+        int pga_index;
+        if(scpi_get_numeric_param(command, "CAL:DEL ", 0, 
+                                  NUM_PGA_SETTINGS-1, &pga_index)) {
+            if(delete_calibration(pga_index)) {
+                char response[64];
+                snprintf(response, sizeof(response), 
+                        "OK - PGA %d calibration deleted", pga_index);
+                scpi_response(response);
+            } else {
+                scpi_response("ERROR: Failed to delete calibration");
+            }
+        } else {
+            scpi_response("ERROR: Invalid parameter. Use <pga> or ALL");
+        }
+        return;
+    }
+    
+    // SCopi:ERRor? - Hent fejllog
+    if(scpi_equals(command, "SYST:ERR?") || 
+       scpi_equals(command, "SYSTEM:ERROR?")) {
+        char error_msg[64];
+        if(get_last_error(error_msg, sizeof(error_msg))) {
+            scpi_response(error_msg);
+        } else {
+            scpi_response("0,\"No error\"");
+        }
+        return;
+    }
+    
+    // Ukendt kommando - standard SCPI fejlkode
+    scpi_response("-113,\"Undefined header\"");
+}
+
+/**
+ * OPTIMERET: Kommandotabel for hurtig opslag
+ */
+
+typedef struct {
+    const char* command;
+    void (*handler)(const char*);
+    uint8_t min_length;
+} scpi_command_t;
+
+// Kommandotabel sorteret efter hyppighed
+static const scpi_command_t scpi_table[] = {
+    {"MEAS:CONT?", scpi_handle_measure_cont, 10},
+    {"SYST:TEMP?", scpi_handle_system_temp, 10},
+    {"CONF:PGA ", scpi_handle_configure_pga, 9},
+    {"CAL:SAVE", scpi_handle_cal_save, 8},
+    {"CAL:LOAD", scpi_handle_cal_load, 8},
+    {"CAL:DEL", scpi_handle_cal_delete, 7},
+    {"SYST:ERR?", scpi_handle_system_error, 9},
+    {NULL, NULL, 0}  // Sentinel
+};
+
+/**
+ * @brief Binært søgning i kommandotabel
+ */
+void scpi_handle_advanced_optimized(const char* command) {
+    // Normaliser kommando: til upper case og trim
+    char normalized[64];
+    normalize_scpi_command(command, normalized, sizeof(normalized));
+    
+    // Søg i tabel
+    for(const scpi_command_t* entry = scpi_table; 
+        entry->command != NULL; 
+        entry++) {
+        
+        if(strncmp(normalized, entry->command, entry->min_length) == 0) {
+            entry->handler(command);
+            return;
+        }
+    }
+    
+    // Prøv ekspansion af forkortelser
+    if(try_command_expansion(normalized)) {
+        return;
+    }
+    
+    scpi_response("-113,\"Undefined header\"");
+}
+
+
+3.4.4  Forventet gevinst
+✅ Bedre integration i automatiserede testsystemer
+✅ Python/LabVIEW styring
+✅ Produktions- og laboratorieegnet instrument
+
+_______________________________________________________________________________
+3.5  STATISTISK ANALYSE - LAV PRIORITET 🟢
+3.5.1  Nuværende problemstilling
+Funktionen analyze_measurements() er implementeret, men bruges ikke. Ingen 
+variansanalyse eller statistisk overvågning af målekvalitet.
+
+3.5.2  Foreslået løsning
+Implementering af cirkulær buffer til målinger og statistisk analyse med 
+display og SCPI-visning.
+
+3.5.3  Teknisk implementering
+
+/**
+ * @file statistics_handler.cpp
+ * @brief Målingsstatistik og bufferhåndtering til ESR-måler
+ * 
+ * @details
+ * Dette modul implementerer en cirkulær buffer til lagring af ESR-målinger
+ * og beregning af statistiske parametre (middelværdi og standardafvigelse).
+ * Statistikkens formål er at identificere målenøjagtighed og -stabilitet.
+ * 
+ * @note
+ * - Buffer er cirkulær (ringbuffer) med fast størrelse (STAT_BUFFER_SIZE)
+ * - Gamle målinger overskrives når buffer er fuld (FIFO-princip)
+ * - Statistiske beregninger bruger alle tilgængelige data i buffer
+ * - Standardafvigelse vises i milli-ohm for bedre læsbarhed
+ * 
+ * @author Dit System  
+ * @date December 2023
+ * @version 1.0
+ * @copyright MIT License
+ */
+
+/**
+ * @def STAT_BUFFER_SIZE
+ * @brief Antal målinger i statistisk buffer
+ * @details
+ * Fast bufferstørrelse på 100 målinger giver balance mellem:
+ * - Hurtig beregning (O(n))
+ * - Repræsentativ statistik (stort nok til central grænseværksteorem)
+ * - Lav hukommelsesforbrug (400 bytes ved 32-bit float)
+ */
+#define STAT_BUFFER_SIZE 100      // Definer bufferstørrelse til 100 målinger
+
+/**
+ * @brief Cirkulær buffer til ESR-måleværdier
+ * @details
+ * Statisk allokeret array til lagring af de seneste målinger.
+ * Buffer opskrives sekventielt med wraparound ved bufferende.
+ * 
+ * @note
+ * - Buffer initialiseres ikke - indeholder udefinerede værdier ved opstart
+ * - Rækkefølgen bevares ikke efter wraparound
+ * - Alle pladser bruges ved fuld buffer
+ */
+float measurement_buffer[STAT_BUFFER_SIZE];  // Array til opbevaring af de seneste ESR-målinger
+
+/**
+ * @brief Indeks til næste ledige position i buffer
+ * @details
+ * Cirkulært indeks der inkrementeres modulo bufferstørrelse.
+ * Indikerer hvor næste måling skal placeres.
+ * 
+ * @note
+ * - Starter ved 0 og øges modulo STAT_BUFFER_SIZE
+ * - Buffer er "fuld" efter første gennemløb, men fortsætter med at overskrive
+ * - uint8_t begrænser buffer til max 255 elementer
+ */
+uint8_t measurement_index = 0;    // Nuværende position i cirkulær buffer
+
+/**
+ * @brief Tilføjer en ny måling til statistisk buffer
+ * 
+ * @param[in] esr_value ESR-værdi i ohm der skal tilføjes til buffer
+ * 
+ * @details
+ * Indsætter en ny måling i den cirkulære buffer og opdaterer indekset.
+ * Gamle data overskrives automatisk når buffer når kapacitet.
+ * 
+ * @note
+ * - Ingen validering af inputværdien (kan være NaN, INF, eller negativ)
+ * - Ingen tidsstempel lagres sammen med målingen
+ * - Ingen fejlhåndtering ved buffer overflow (designet til wraparound)
+ * 
+ * @par Bufferadfærd:
+ * - Første 100 målinger: Fylder buffer sekventielt
+ * - Efter 100 målinger: Overskriver ældste måling (cirkulær)
+ * 
+ * @warning
+ * - Ingen atomaritetsgaranti ved brug i interrupt kontekst
+ * - Målinger tabes ved wraparound uden advarsel
+ * 
+ * @return void
+ * 
+ * @see display_statistics()
+ * @see scpi_handle_statistics()
+ */
+void add_measurement_to_buffer(float esr_value) {
+    measurement_buffer[measurement_index] = esr_value;   // Gem måling på nuværende indeksposition
+    measurement_index = (measurement_index + 1) % STAT_BUFFER_SIZE;  // Inkrementer med wraparound ved bufferende
+}
+
+/**
+ * @brief Beregner og viser statistisk oversigt på LCD-display
+ * 
+ * @details
+ * Funktionen beregner middelværdi og standardafvigelse af alle målinger i buffer
+ * og viser resultaterne formateret på et 16x2 LCD-display.
+ * 
+ * @note
+ * - Beregner statistik over ALLE bufferpositioner (også uinitialiserede ved opstart)
+ * - Standardafvigelse konverteres til milli-ohm (×1000) for bedre læsbarhed
+ * - LCD formatering antager 16 tegn pr. linje
+ * - Ingen fejlhåndtering ved ugyldige beregningsresultater
+ * 
+ * @par Displayformat:
+ * Linje 1: "Avg:1.234R" (middelværdi med 3 decimaler)
+ * Linje 2: "StdDev:12.3mR" (standardafvigelse i milli-ohm med 1 decimal)
+ * 
+ * @warning
+ * - analyze_measurements() skal være implementeret og korrekt
+ * - LCD-display skal være initialiseret før kald
+ * - Viser potentielt meningsløs statistik ved få målinger
+ * 
+ * @return void
+ * 
+ * @see analyze_measurements()
+ * @see add_measurement_to_buffer()
+ */
+void display_statistics(void) {
+    float mean, stddev;                                  // Variable til statistiske resultater
+    analyze_measurements(measurement_buffer, STAT_BUFFER_SIZE, &mean, &stddev);  // Beregn statistik over hele bufferen
+    
+    lcd.clear();                                         // Ryd LCD-display
+    lcd.setCursor(0, 0);                                // Placer cursor på første linje, første tegn
+    lcd.print("Avg:");                                  // Udskrift af "Avg:" label
+    lcd.print(mean, 3);                                 // Udskriv middelværdi med 3 decimaler
+    lcd.print("R");                                     // Tilføj ohm-enhedsbetegnelse
+    
+    lcd.setCursor(0, 1);                                // Placer cursor på anden linje, første tegn
+    lcd.print("StdDev:");                               // Udskrift af "StdDev:" label
+    lcd.print(stddev * 1000.0, 1);                      // Konverter til milli-ohm og udskriv med 1 decimal
+    lcd.print("mR");                                    // Tilføj milli-ohm enhedsbetegnelse
+}
+
+/**
+ * @brief SCPI kommando til at hente statistiske data
+ * 
+ * @details
+ * Håndterer SCPI forespørgsel efter statistiske parametre.
+ * Returnerer en formateret streng med middelværdi og standardafvigelse.
+ * 
+ * @note
+ * - Returnerer data i fast format: "MEAN:1.2345,STDDEV:0.000123"
+ * - Beregninger er identiske med display_statistics() men uden formatering til display
+ * - Ingen parametre understøttes - altid bruger hele buffer
+ * 
+ * @par SCPI Responsformat:
+ * "MEAN:1.2345,STDDEV:0.000123" hvor:
+ * - MEAN: Middelværdi i ohm med 4 decimaler
+ * - STDDEV: Standardafvigelse i ohm med 6 decimaler
+ * 
+ * @warning
+ * - analyze_measurements() fejl propageres ikke til SCPI klient
+ * - Brug af snprintf kan teoretisk overflow ved ekstreme værdier
+ * - Returnerer resultat baseret på ALLE bufferpositioner (inklusive 0-værdier ved opstart)
+ * 
+ * @return void
+ * 
+ * @see scpi_response()
+ * @see analyze_measurements()
+ */
+void scpi_handle_statistics(void) {
+    float mean, stddev;                                  // Variable til statistiske resultater
+    analyze_measurements(measurement_buffer, STAT_BUFFER_SIZE, &mean, &stddev);  // Beregn statistik over hele bufferen
+    
+    char response[64];                                   // Buffer til formateret SCPI respons
+    snprintf(response, sizeof(response), "MEAN:%.4f,STDDEV:%.6f", mean, stddev);  // Formatér til fast SCPI format
+    scpi_response(response);                            // Send respons til SCPI klient
+}
+
+/**
+ * FORBEDRET VERSION: Buffer med tidsstempler og gyldighedsflag
+ */
+
+#include <math.h>
+#include <stdbool.h>
+
+#define STAT_BUFFER_SIZE 100
+#define MAX_ESR_VALUE     100.0f    // Maksimal realistisk ESR i ohm
+#define MIN_ESR_VALUE     0.0001f   // Minimal realistisk ESR i ohm
+
+typedef struct {
+    float esr_value;                // ESR måling i ohm
+    uint32_t timestamp_ms;          // Tidsstempel i millisekunder
+    bool valid;                     // Gyldighedsflag
+} measurement_entry_t;
+
+measurement_entry_t measurement_buffer[STAT_BUFFER_SIZE];
+uint8_t measurement_index = 0;
+uint8_t valid_measurements_count = 0;  // Antal faktisk gyldige målinger
+
+/**
+ * @brief Validerer en ESR-måling for gyldighed
+ */
+bool validate_esr_measurement(float esr_value) {
+    // Tjek for NaN og infinity
+    if (isnan(esr_value) || isinf(esr_value)) {
+        return false;
+    }
+    
+    // Tjek for realistisk område
+    if (esr_value < MIN_ESR_VALUE || esr_value > MAX_ESR_VALUE) {
+        return false;
+    }
+    
+    // Yderligere validering kan tilføjes her
+    return true;
+}
+
+/**
+ * @brief Tilføj måling med validering og tidsstempel
+ */
+void add_validated_measurement_to_buffer(float esr_value) {
+    uint32_t current_time = millis();  // Hent aktuelt systemtid
+    
+    if (!validate_esr_measurement(esr_value)) {
+        // Log fejl eller ignorer måling
+        return;
+    }
+    
+    // Gem måling med metadata
+    measurement_buffer[measurement_index].esr_value = esr_value;
+    measurement_buffer[measurement_index].timestamp_ms = current_time;
+    measurement_buffer[measurement_index].valid = true;
+    
+    // Opdater tællere
+    measurement_index = (measurement_index + 1) % STAT_BUFFER_SIZE;
+    
+    if (valid_measurements_count < STAT_BUFFER_SIZE) {
+        valid_measurements_count++;
+    }
+    
+    // Gem sidste gyldige timestamp for at detektere for gamle data
+    static uint32_t last_valid_timestamp = 0;
+    last_valid_timestamp = current_time;
+}
+
+/**
+ * @brief Beregn statistik kun over gyldige målinger
+ */
+bool calculate_statistics_valid_only(float* mean, float* stddev, 
+                                     uint32_t max_age_ms) {
+    if (valid_measurements_count == 0) {
+        return false;
+    }
+    
+    float sum = 0.0f;
+    uint32_t current_time = millis();
+    uint8_t count = 0;
+    
+    // Beregn sum for gyldige målinger inden for tidsvindue
+    for (int i = 0; i < STAT_BUFFER_SIZE; i++) {
+        if (measurement_buffer[i].valid) {
+            // Tjek om målingen er for gammel
+            if (max_age_ms > 0 && 
+                (current_time - measurement_buffer[i].timestamp_ms) > max_age_ms) {
+                continue;  // Spring over for gamle målinger
+            }
+            
+            sum += measurement_buffer[i].esr_value;
+            count++;
+        }
+    }
+    
+    if (count == 0) {
+        return false;
+    }
+    
+    *mean = sum / count;
+    
+    // Beregn standardafvigelse
+    float sum_sq_diff = 0.0f;
+    for (int i = 0; i < STAT_BUFFER_SIZE; i++) {
+        if (measurement_buffer[i].valid) {
+            if (max_age_ms > 0 && 
+                (current_time - measurement_buffer[i].timestamp_ms) > max_age_ms) {
+                continue;
+            }
+            
+            float diff = measurement_buffer[i].esr_value - *mean;
+            sum_sq_diff += diff * diff;
+        }
+    }
+    
+    *stddev = sqrtf(sum_sq_diff / count);
+    return true;
+}
+
+/**
+ * AVANCERET STATISTIK: Flere statistiske mål og outlier detection
+ */
+
+typedef struct {
+    float mean;
+    float median;
+    float stddev;
+    float min;
+    float max;
+    float confidence_interval_95[2];  // 95% konfidensinterval
+    uint8_t sample_count;
+    uint8_t outliers_removed;
+} statistics_t;
+
+/**
+ * @brief Komplet statistisk analyse med outlier detection
+ */
+bool analyze_measurements_advanced(measurement_entry_t* buffer, 
+                                   uint8_t size,
+                                   statistics_t* stats,
+                                   uint32_t time_window_ms) {
+    // Saml gyldige målinger inden for tidsvindue
+    float values[STAT_BUFFER_SIZE];
+    uint8_t valid_count = 0;
+    uint32_t current_time = millis();
+    
+    for (int i = 0; i < size; i++) {
+        if (buffer[i].valid) {
+            if (time_window_ms == 0 || 
+                (current_time - buffer[i].timestamp_ms) <= time_window_ms) {
+                values[valid_count++] = buffer[i].esr_value;
+            }
+        }
+    }
+    
+    if (valid_count < 3) {  // For få data til meningsfuld statistik
+        return false;
+    }
+    
+    // Beregn grundlæggende statistik
+    float sum = 0.0f;
+    float min_val = values[0];
+    float max_val = values[0];
+    
+    for (int i = 0; i < valid_count; i++) {
+        sum += values[i];
+        if (values[i] < min_val) min_val = values[i];
+        if (values[i] > max_val) max_val = values[i];
+    }
+    
+    stats->mean = sum / valid_count;
+    stats->min = min_val;
+    stats->max = max_val;
+    stats->sample_count = valid_count;
+    
+    // Beregn standardafvigelse før outlier detection
+    float sum_sq_diff = 0.0f;
+    for (int i = 0; i < valid_count; i++) {
+        float diff = values[i] - stats->mean;
+        sum_sq_diff += diff * diff;
+    }
+    
+    float initial_stddev = sqrtf(sum_sq_diff / valid_count);
+    
+    // Outlier detection ved hjælp af IQR-metoden
+    float sorted_values[STAT_BUFFER_SIZE];
+    memcpy(sorted_values, values, valid_count * sizeof(float));
+    
+    // Sorter for at finde median og kvartiler
+    qsort(sorted_values, valid_count, sizeof(float), compare_float);
+    
+    // Beregn median
+    if (valid_count % 2 == 0) {
+        stats->median = (sorted_values[valid_count/2 - 1] + 
+                        sorted_values[valid_count/2]) / 2.0f;
+    } else {
+        stats->median = sorted_values[valid_count/2];
+    }
+    
+    // Beregn kvartiler
+    float q1 = sorted_values[valid_count / 4];
+    float q3 = sorted_values[3 * valid_count / 4];
+    float iqr = q3 - q1;
+    
+    // Fjern outliers og genberegn
+    float filtered_values[STAT_BUFFER_SIZE];
+    uint8_t filtered_count = 0;
+    stats->outliers_removed = 0;
+    
+    float lower_bound = q1 - 1.5f * iqr;
+    float upper_bound = q3 + 1.5f * iqr;
+    
+    for (int i = 0; i < valid_count; i++) {
+        if (values[i] >= lower_bound && values[i] <= upper_bound) {
+            filtered_values[filtered_count++] = values[i];
+        } else {
+            stats->outliers_removed++;
+        }
+    }
+    
+    // Genberegn statistik med outliers fjernet
+    if (filtered_count > 0) {
+        sum = 0.0f;
+        for (int i = 0; i < filtered_count; i++) {
+            sum += filtered_values[i];
+        }
+        stats->mean = sum / filtered_count;
+        
+        sum_sq_diff = 0.0f;
+        for (int i = 0; i < filtered_count; i++) {
+            float diff = filtered_values[i] - stats->mean;
+            sum_sq_diff += diff * diff;
+        }
+        stats->stddev = sqrtf(sum_sq_diff / filtered_count);
+        
+        // Beregn 95% konfidensinterval
+        float standard_error = stats->stddev / sqrtf(filtered_count);
+        float margin_of_error = 1.96f * standard_error;  // Z-score for 95%
+        
+        stats->confidence_interval_95[0] = stats->mean - margin_of_error;
+        stats->confidence_interval_95[1] = stats->mean + margin_of_error;
+    }
+    
+    return true;
+}
+
+/**
+ * @brief Udvidet SCPI statistikkommando med flere parametre
+ */
+void scpi_handle_statistics_advanced(void) {
+    statistics_t stats;
+    uint32_t time_window = 60000;  // 60 sekunders vindue
+    
+    if (!analyze_measurements_advanced(measurement_buffer, 
+                                      STAT_BUFFER_SIZE, 
+                                      &stats, 
+                                      time_window)) {
+        scpi_response("ERROR: Insufficient valid measurements");
+        return;
+    }
+    
+    char response[128];
+    snprintf(response, sizeof(response),
+             "MEAN:%.4f,STDDEV:%.6f,MEDIAN:%.4f,MIN:%.4f,MAX:%.4f,"
+             "CI95:[%.4f,%.4f],SAMPLES:%d,OUTLIERS:%d",
+             stats.mean, stats.stddev, stats.median, 
+             stats.min, stats.max,
+             stats.confidence_interval_95[0], 
+             stats.confidence_interval_95[1],
+             stats.sample_count, 
+             stats.outliers_removed);
+    
+    scpi_response(response);
+}
+
+/**
+ * YDELSESOPTIMERET: Glidende vindue og inkrementel beregning
+ */
+
+typedef struct {
+    float running_sum;
+    float running_sum_squares;
+    uint32_t window_start_time;
+    uint32_t window_duration_ms;
+    uint8_t window_capacity;
+    uint8_t current_count;
+} sliding_window_stats_t;
+
+sliding_window_stats_t sliding_stats = {0};
+
+/**
+ * @brief Initialiser glidende vindue
+ */
+void init_sliding_window(uint32_t duration_ms) {
+    sliding_stats.window_duration_ms = duration_ms;
+    sliding_stats.window_start_time = millis();
+    sliding_stats.running_sum = 0.0f;
+    sliding_stats.running_sum_squares = 0.0f;
+    sliding_stats.current_count = 0;
+}
+
+/**
+ * @brief Tilføj måling til glidende vindue med automatisk eviction
+ */
+void add_to_sliding_window(float esr_value, uint32_t timestamp_ms) {
+    // Fjern for gamle målinger
+    while (sliding_stats.current_count > 0 && 
+           timestamp_ms - sliding_stats.window_start_time > 
+           sliding_stats.window_duration_ms) {
+        // Her ville vi fjerne den ældste måling fra running sums
+        // Implementering kræver buffer af tidligere værdier
+    }
+    
+    // Tilføj ny måling
+    sliding_stats.running_sum += esr_value;
+    sliding_stats.running_sum_squares += esr_value * esr_value;
+    sliding_stats.current_count++;
+    
+    // Beregn statistik on-the-fly
+    if (sliding_stats.current_count > 0) {
+        float mean = sliding_stats.running_sum / sliding_stats.current_count;
+        float variance = (sliding_stats.running_sum_squares / 
+                         sliding_stats.current_count) - (mean * mean);
+        
+        // Opdater display kontinuerligt
+        update_statistics_display(mean, sqrtf(variance));
+    }
+}
+
+/**
+ * @brief Hurtig statistikkommando med pre-beregnet statistik
+ */
+void scpi_handle_statistics_fast(void) {
+    uint32_t current_time = millis();
+    
+    // Brug pre-beregnet statistik hvis tilgængelig
+    static float last_mean = 0.0f;
+    static float last_stddev = 0.0f;
+    static uint32_t last_update = 0;
+    
+    // Opdater kun hvis data er mere end 1 sekund gammelt
+    if (current_time - last_update > 1000) {
+        // Beregn frisk statistik
+        calculate_statistics_valid_only(&last_mean, &last_stddev, 60000);
+        last_update = current_time;
+    }
+    
+    char response[64];
+    snprintf(response, sizeof(response), 
+             "%.4f,%.6f", last_mean, last_stddev);
+    scpi_response(response);
+}
+
+3.5.4  Forventet gevinst
+✅ Kvalitetsvurdering af målinger
+✅ Detektering af ustabile komponenter
+✅ Dataanalyse i produktionstest
+
+_______________________________________________________________________________
+3.6  DATALOGGING - LAV PRIORITET 🟢
+3.6.1  Nuværende problemstilling
+Ingen mulighed for at logge måledata til ekstern lagring til senere analyse 
+eller dokumentation.
+
+3.6.2  Foreslået løsning
+Implementering af SD-kort modul med CSV-fil logging af alle målinger med 
+timestamp, ESR-værdi, ADC, PGA og temperatur.
+
+3.6.3  Teknisk implementering
+/**
+ * @file sd_logging.cpp
+ * @brief SD-kort datalogging modul for ESR-målesystem
+ * 
+ * @details
+ * Dette modul implementerer datalogging til SD-kort i CSV-format.
+ * Systemet logger tidsstemplede målinger inklusive rå data, kalibrerede værdier
+ * og miljøparametre til senere analyse og dokumentation.
+ * 
+ * @note
+ * - Bruger SPI-baseret SD-kort kommunikation via hardware CS-pin
+ * - Data gemmes i standard CSV-format for kompatibilitet med Excel/R/Python
+ * - Filnavnet er fast defineret som "/esr_log.csv" i rodmappen
+ * - Enhver fejl i SD-kort initialisering logges til seriel monitor
+ * 
+ * @warning
+ * - Ingen wear-leveling implementering - risiko for kort levetid ved hyppig logging
+ * - Ingen fejlhåndtering ved fuldt kort eller skrivefejl
+ * - Åbner og lukker filen for hver måling - ineffektivt og belaster kortet
+ * 
+ * @author Dit System
+ * @date December 2023
+ * @version 1.0
+ * @copyright MIT License
+ * 
+ * @see SD.h (Arduino SD Card Library)
+ * @see https://www.arduino.cc/en/Reference/SD
+ */
+
+#include <SD.h>                    // Inkluder Arduino SD-kort bibliotek (bygget over SdFat)
+
+/**
+ * @def SD_CS_PIN
+ * @brief Chip Select pin for SPI SD-kort kommunikation
+ * @details
+ * Pin 5 er typisk valgt for ESP32 SD-kort moduler.
+ * Dette er hardware CS (Chip Select) linjen for SPI-bussen.
+ * Alternative pins kan bruges afhængigt af hardwarelayout.
+ */
+#define SD_CS_PIN 5                // Definer hvilken GPIO der bruges til SD-kort chip select
+
+/**
+ * @brief Global filhåndter til logfilen
+ * @details
+ * File-objekt fra SD-biblioteket til at håndtere filoperationer.
+ * Initialiseres i setup_sd_logging() og bruges ved hver logging.
+ * 
+ * @note
+ * - Global variabel kan skabe problemer i multi-threaded kontekst
+ * - Filen åbnes og lukkes for hver skriveoperation
+ * - Ingen låsemekanisme mod samtidig adgang
+ */
+File logFile;                      // Global filhåndter for logfilen
+
+/**
+ * @brief Initialiserer SD-kort og opretter logfil med overskrift
+ * 
+ * @details
+ * Funktionen initialiserer SD-kortet via SPI med den specificerede CS-pin.
+ * Ved succes oprettes en CSV-fil med kolonneoverskrifter.
+ * Fejl under initialisering logges til seriel monitor.
+ * 
+ * @note
+ * - SD.begin() konfigurerer SPI med standard indstillinger (SPI mode 0, 4MHz)
+ * - FILE_WRITE flag åbner filen til skrivning (opretter eller overskriver)
+ * - CSV-overskriften definerer datafelter for senere parsing
+ * 
+ * @warning
+ * - Ingen gentagelseslogik ved kortfejl - systemet giver blot op
+ * - Bruger 512 bytes buffer til filskrivning (SD library standard)
+ * - Arbejder ikke med langtfilsnavne (> 8.3 format)
+ * 
+ * @par CSV-kolonner:
+ * 1. Timestamp: Millisekunder siden opstart (uint32_t)
+ * 2. ESR: Kalibreret ESR-værdi i ohm (float, 4 decimaler)
+ * 3. ADC: Rå ADC-værdi (uint16_t)
+ * 4. PGA: Aktuel forstærkerindstilling (uint8_t index)
+ * 5. Temperature: Temperatur i °C (float, 2 decimaler)
+ * 
+ * @return void
+ * 
+ * @see SD::begin()
+ * @see SD::open()
+ * @see File::println()
+ * @see File::close()
+ */
+void setup_sd_logging(void) {
+    if (!SD.begin(SD_CS_PIN)) {        // Initialiser SD-kort med specificeret CS-pin
+        Serial.println("SD kort fejl"); // Hvis fejl: udskriv fejlmeddelelse til seriel
+        return;                         // Afslut funktion uden at oprette fil
+    }
+    
+    logFile = SD.open("/esr_log.csv", FILE_WRITE); // Åbn/opret fil til skrivning i rodmappen
+    if (logFile) {                                 // Tjek om filåbning lykkedes
+        logFile.println("Timestamp,ESR,ADC,PGA,Temperature"); // Skriv CSV-overskriftslinje
+        logFile.close();                           // Luk fil for at garantere data skrives
+    }
+}
+
+/**
+ * @brief Logger en enkelt måling til SD-kort i CSV-format
+ * 
+ * @details
+ * Åbner logfilen i tilføjelsestilstand og skriver en linje med
+ * aktuelle måleparametre. Formatet er komma-separeret værdier (CSV).
+ * Funktionen antager at alle nødvendige globale målevariabler er opdateret.
+ * 
+ * @note
+ * - FILE_APPEND sikrer at data tilføjes eksisterende fil uden overskrivning
+ * - millis() giver relativ tid siden opstart - ikke absolut tid
+ * - Ingen tidsstempel-konvertering til menneskelæseligt format
+ * - Filen lukkes umiddelbart efter skrivning for at minimere data tab
+ * 
+ * @warning
+ * - Åbner/lukker fil for hver måling: højt overhead og flash-slitage
+ * - Ingen fejlhåndtering ved skrivefejl eller kort fjernet undervejs
+ * - Ingen bufferingsmekanisme - data kan tabes ved strømafbrydelse
+ * - CSV-formatet er sårbart overfor kommata i floating-point værdier
+ * 
+ * @par Datapunkter:
+ * - Timestamp: Systemtid i ms (kun nyttigt med samtidig opstartslog)
+ * - ESR: Kalibreret og temperaturkompenseret ESR-værdi
+ * - ADC: Rå 12-bit ADC-værdi (0-4095)
+ * - PGA: Index for PGA-forstærkning (0=2x, 1=4x, 2=8x, 3=16x typisk)
+ * - Temperature: Aktuel omgivelsestemperatur fra DS18B20
+ * 
+ * @return void
+ * 
+ * @see SD::open()
+ * @see File::print()
+ * @see File::println()
+ * @see File::close()
+ */
+void log_measurement(void) {
+    logFile = SD.open("/esr_log.csv", FILE_APPEND); // Åbn fil i tilføjelsestilstand
+    if (logFile) {                                  // Tjek om filåbning lykkedes
+        logFile.print(millis());                    // Skriv nuværende systemtid i ms
+        logFile.print(",");                         // Skriv CSV-separator
+        logFile.print(calculatedEsr, 4);            // Skriv ESR med 4 decimaler
+        logFile.print(",");                         // Skriv CSV-separator
+        logFile.print(rawAdcValue);                 // Skriv rå ADC-værdi
+        logFile.print(",");                         // Skriv CSV-separator
+        logFile.print(currentPgaSetting);           // Skriv PGA-indstilling
+        logFile.print(",");                         // Skriv CSV-separator
+        logFile.println(current_temperature, 2);    // Skriv temperatur med 2 decimaler + linjeskift
+        logFile.close();                            // Luk fil og tving data til kort
+    }
+}
+
+/**
+ * FORBEDRET VERSION: Bufferet logging med wear-leveling og fejlgenopretning
+ */
+
+#include <SD.h>
+#include <RTClib.h>  // For RTC-tidsstempler
+
+#define SD_CS_PIN 5
+#define LOG_BUFFER_SIZE 50          // Antal målinger i buffer før flush til kort
+#define MAX_LOG_FILES 100           // Maks antal logfiler før rotation
+
+RTC_DS3231 rtc;                     // RTC for nøjagtige tidsstempler
+
+typedef struct {
+    uint32_t timestamp;
+    float esr_value;
+    uint16_t adc_value;
+    uint8_t pga_setting;
+    float temperature;
+    bool valid;
+} log_entry_t;
+
+log_entry_t log_buffer[LOG_BUFFER_SIZE];
+uint8_t buffer_index = 0;
+bool sd_available = false;
+
+/**
+ * @brief Initialiser SD-kort med fejlgenopretning
+ */
+bool init_sd_card_with_retry(uint8_t max_retries = 3) {
+    uint8_t retry_count = 0;
+    
+    while (retry_count < max_retries) {
+        if (SD.begin(SD_CS_PIN)) {
+            sd_available = true;
+            return true;
+        }
+        
+        Serial.printf("SD init fejl, forsøg %d/%d\n", retry_count + 1, max_retries);
+        delay(100 * (retry_count + 1));  // Progressiv backoff
+        retry_count++;
+    }
+    
+    sd_available = false;
+    return false;
+}
+
+/**
+ * @brief Finder næste ledige logfilnavn
+ */
+String get_next_log_filename() {
+    char filename[20];
+    
+    for (int i = 0; i < MAX_LOG_FILES; i++) {
+        snprintf(filename, sizeof(filename), "/esr_log_%03d.csv", i);
+        
+        if (!SD.exists(filename)) {
+            return String(filename);
+        }
+    }
+    
+    // Hvis alle filer eksisterer, overskriv den ældste
+    return find_oldest_log_file();
+}
+
+/**
+ * @brief Skriver buffer til SD-kort med verifikation
+ */
+bool flush_log_buffer() {
+    if (!sd_available || buffer_index == 0) {
+        return false;
+    }
+    
+    String filename = get_next_log_filename();
+    File file = SD.open(filename.c_str(), FILE_WRITE);
+    
+    if (!file) {
+        Serial.println("Fejl ved åbning af logfil");
+        return false;
+    }
+    
+    // Skriv CSV-overskrift hvis ny fil
+    if (file.size() == 0) {
+        file.println("DateTime,Timestamp,ESR,ADC,PGA,Temp");
+    }
+    
+    // Skriv alle bufferindgange
+    for (int i = 0; i < buffer_index; i++) {
+        if (log_buffer[i].valid) {
+            DateTime now = rtc.now();
+            
+            // Formatér tidsstempel: YYYY-MM-DD HH:MM:SS
+            file.printf("%04d-%02d-%02d %02d:%02d:%02d,",
+                       now.year(), now.month(), now.day(),
+                       now.hour(), now.minute(), now.second());
+            
+            file.printf("%lu,%.4f,%d,%d,%.2f\n",
+                       log_buffer[i].timestamp,
+                       log_buffer[i].esr_value,
+                       log_buffer[i].adc_value,
+                       log_buffer[i].pga_setting,
+                       log_buffer[i].temperature);
+        }
+    }
+    
+    // Verificer skrivning
+    uint32_t expected_size = file.size();
+    file.close();
+    
+    File verify_file = SD.open(filename.c_str(), FILE_READ);
+    bool success = (verify_file && verify_file.size() == expected_size);
+    verify_file.close();
+    
+    if (success) {
+        buffer_index = 0;  // Ryd buffer ved succesfuld skrivning
+        Serial.printf("Buffer flushed: %d entries to %s\n", 
+                     buffer_index, filename.c_str());
+    } else {
+        Serial.println("Fejl: Logfil verifikation fejlede");
+    }
+    
+    return success;
+}
+
+/**
+ * @brief Tilføj måling til buffer med automatisk flush
+ */
+void log_measurement_buffered() {
+    if (!sd_available) {
+        return;
+    }
+    
+    // Tjek om buffer er fuld
+    if (buffer_index >= LOG_BUFFER_SIZE) {
+        if (!flush_log_buffer()) {
+            // Prøv én gang til ved fejl
+            delay(10);
+            if (!flush_log_buffer()) {
+                Serial.println("Kritisk: Kunne ikke skrive buffer til SD");
+                // Behold data i buffer til næste forsøg
+                return;
+            }
+        }
+    }
+    
+    // Tilføj måling til buffer
+    log_buffer[buffer_index].timestamp = millis();
+    log_buffer[buffer_index].esr_value = calculatedEsr;
+    log_buffer[buffer_index].adc_value = rawAdcValue;
+    log_buffer[buffer_index].pga_setting = currentPgaSetting;
+    log_buffer[buffer_index].temperature = current_temperature;
+    log_buffer[buffer_index].valid = true;
+    
+    buffer_index++;
+    
+    // Automatisk flush hver 30. måling eller hver 5. sekund
+    static uint32_t last_flush_time = 0;
+    if (buffer_index >= 30 || (millis() - last_flush_time) > 5000) {
+        flush_log_buffer();
+        last_flush_time = millis();
+    }
+}
+
+/**
+ * AVANCERET: Filrotation og wear-leveling strategi
+ */
+
+#define MAX_FILE_SIZE 100000  // Max filstørrelse før rotation (100KB)
+#define MIN_FREE_SPACE 10000  // Minimum ledig plads på kort (10KB)
+
+/**
+ * @brief Wear-leveling strategi med filrotation
+ */
+class SDLogger {
+private:
+    File current_file;
+    String current_filename;
+    uint32_t bytes_written;
+    uint8_t file_counter;
+    
+public:
+    SDLogger() : bytes_written(0), file_counter(0) {}
+    
+    bool begin() {
+        if (!SD.begin(SD_CS_PIN)) {
+            return false;
+        }
+        
+        // Find sidste logfilnummer
+        file_counter = find_last_log_number();
+        return create_new_logfile();
+    }
+    
+    void log_data(const log_entry_t& entry) {
+        // Tjek om vi skal rotere fil
+        if (bytes_written > MAX_FILE_SIZE || 
+            get_free_space() < MIN_FREE_SPACE) {
+            rotate_logfile();
+        }
+        
+        if (!current_file) {
+            if (!create_new_logfile()) {
+                return;
+            }
+        }
+        
+        // Formatér og skriv data
+        String line = format_csv_line(entry);
+        current_file.println(line);
+        bytes_written += line.length() + 2;  // +2 for CRLF
+        
+        // Flush hver 10 linjer for at minimere data tab
+        static uint8_t line_count = 0;
+        if (++line_count >= 10) {
+            current_file.flush();
+            line_count = 0;
+        }
+    }
+    
+    void rotate_logfile() {
+        if (current_file) {
+            current_file.close();
+        }
+        
+        // Slet ældste fil hvis vi når max antal
+        if (file_counter >= MAX_LOG_FILES) {
+            delete_oldest_logfile();
+            file_counter = MAX_LOG_FILES - 1;
+        }
+        
+        file_counter++;
+        create_new_logfile();
+    }
+    
+private:
+    bool create_new_logfile() {
+        char filename[32];
+        snprintf(filename, sizeof(filename), 
+                "/logs/esr_%03d.csv", file_counter);
+        
+        current_filename = filename;
+        current_file = SD.open(filename, FILE_WRITE);
+        
+        if (!current_file) {
+            return false;
+        }
+        
+        // Skriv BOM for UTF-8 og overskrift
+        current_file.write(0xEF);
+        current_file.write(0xBB);
+        current_file.write(0xBF);
+        current_file.println("DateTime,ESR,ADC,PGA,Temp,CRC32");
+        
+        bytes_written = current_file.size();
+        return true;
+    }
+    
+    uint32_t get_free_space() {
+        Sd2Card card;
+        SdVolume volume;
+        
+        if (!card.init(SPI_HALF_SPEED, SD_CS_PIN)) {
+            return 0;
+        }
+        
+        if (!volume.init(&card)) {
+            return 0;
+        }
+        
+        return volume.freeClusterCount() * volume.blocksPerCluster() * 512;
+    }
+};
+
+/**
+ * ROBUST: Komplet fejlhåndtering med fallback og recovery
+ */
+
+typedef enum {
+    LOG_STATE_INIT,
+    LOG_STATE_READY,
+    LOG_STATE_ERROR,
+    LOG_STATE_RECOVERING
+} log_state_t;
+
+class RobustLogger {
+private:
+    log_state_t state;
+    uint32_t error_count;
+    uint32_t last_success_time;
+    uint8_t retry_counter;
+    
+    // Fallback buffer i RAM hvis SD fejler
+    #define RAM_BACKUP_SIZE 1000
+    String ram_backup[RAM_BACKUP_SIZE];
+    uint16_t ram_backup_index;
+    
+public:
+    RobustLogger() : state(LOG_STATE_INIT), error_count(0), 
+                     ram_backup_index(0) {}
+    
+    bool initialize() {
+        // Prøv SD-kort
+        if (SD.begin(SD_CS_PIN)) {
+            state = LOG_STATE_READY;
+            return true;
+        }
+        
+        // SD fejlet - gå til RAM backup mode
+        state = LOG_STATE_ERROR;
+        Serial.println("Advarsel: SD fejlet, bruger RAM backup");
+        return false;
+    }
+    
+    void log_with_recovery(const log_entry_t& entry) {
+        switch (state) {
+            case LOG_STATE_READY:
+                if (!write_to_sd(entry)) {
+                    error_count++;
+                    if (error_count > 10) {
+                        state = LOG_STATE_ERROR;
+                        save_to_ram_backup(entry);
+                    }
+                } else {
+                    last_success_time = millis();
+                    error_count = 0;
+                }
+                break;
+                
+            case LOG_STATE_ERROR:
+                save_to_ram_backup(entry);
+                
+                // Prøv recovery hvert 5. sekund
+                if (millis() - last_success_time > 5000) {
+                    attempt_recovery();
+                }
+                break;
+                
+            case LOG_STATE_RECOVERING:
+                // Midlertidigt gem i RAM mens vi genopretter
+                save_to_ram_backup(entry);
+                break;
+        }
+    }
+    
+    void attempt_recovery() {
+        state = LOG_STATE_RECOVERING;
+        
+        // 1. Prøv at geninitialisere SD
+        if (SD.begin(SD_CS_PIN)) {
+            // 2. Skriv RAM backup til SD
+            if (flush_ram_backup_to_sd()) {
+                state = LOG_STATE_READY;
+                error_count = 0;
+                Serial.println("Recovery successful!");
+            }
+        }
+        
+        if (state == LOG_STATE_RECOVERING) {
+            state = LOG_STATE_ERROR;  // Recovery fejlede
+        }
+    }
+    
+private:
+    bool write_to_sd(const log_entry_t& entry) {
+        File file = SD.open("/log.csv", FILE_APPEND);
+        if (!file) {
+            return false;
+        }
+        
+        String line = format_csv_line(entry);
+        size_t written = file.print(line);
+        file.close();
+        
+        return (written == line.length());
+    }
+    
+    void save_to_ram_backup(const log_entry_t& entry) {
+        if (ram_backup_index >= RAM_BACKUP_SIZE) {
+            ram_backup_index = 0;  // Wrap-around
+        }
+        
+        ram_backup[ram_backup_index] = format_csv_line(entry);
+        ram_backup_index++;
+        
+        // Advarsel hvis RAM backup er næsten fuld
+        if (ram_backup_index == RAM_BACKUP_SIZE - 10) {
+            Serial.println("Advarsel: RAM backup næsten fuld!");
+        }
+    }
+    
+    bool flush_ram_backup_to_sd() {
+        File file = SD.open("/recovery.csv", FILE_WRITE);
+        if (!file) {
+            return false;
+        }
+        
+        for (int i = 0; i < ram_backup_index; i++) {
+            if (file.println(ram_backup[i]) == 0) {
+                file.close();
+                return false;
+            }
+        }
+        
+        file.close();
+        ram_backup_index = 0;  // Tøm buffer
+        return true;
+    }
+};
+
+3.6.4  Forventet gevinst
+✅ Langtidsovervågning
+✅ Trendanalyse
+✅ Dokumentation og rapportering
+✅ Fejlfinding ved intermittente problemer
+
+===============================================================================
+§4.  EPISTEMISKE BEGRÆNSNINGER
+===============================================================================
+Implementeringsbegrænsninger (F.UNC.001): Alle forbedringer forudsætter 
+ledige GPIO-pins på ESP32 til SD-kort og temperatursensor.
+
+Kompatibilitetsbegrænsninger (F.UNC.002): Ændringer i firmware kan påvirke 
+eksisterende funktionalitet. Nødvendigt med omfattende regressionstest.
+
+Ydelsesbegrænsninger (F.UNC.003): Tilføjelse af SD-kort logging og statistisk 
+analyse kan påvirke systemets real-time ydeevne. Kræver optimering.
+
+===============================================================================
+§5.  IMPLEMENTERINGSPLAN OG PRIORITERING
+===============================================================================
+5.1  Prioriteret implementeringsplan
+Fase 1 - Kritiske Forbedringer (1-2 uger):
+  1. ✅ Persistent kalibrering (NVS)
+  2. ✅ Temperaturmåling og kompensation
+
+Fase 2 - Brugervenlighed (1 uge):
+  3. ✅ Simpelt menusystem
+  4. ✅ Udvidet SCPI
+
+Fase 3 - Avancerede Features (1 uge):
+  5. ✅ Statistisk analyse
+  6. ✅ Datalogging
+
+5.2  Kodestruktur forbedringer
+Overvej modulær opdeling af den monolitiske .ino-fil:
+
+ESR_Meter/
+├── ESR_Meter.ino (Kun setup() og loop())
+├── hal_ad9850.cpp/h (DDS kontrol)
+├── hal_ads1115.cpp/h (ADC kontrol)
+├── hal_lcd.cpp/h (Display)
+├── adc_processing.cpp/h (Oversampling, auto-range)
+├── esr_calculation.cpp/h (Interpolation, tabeller)
+├── scpi_handler.cpp/h (SCPI protokol)
+├── state_machine.cpp/h (Systemstyring)
+├── calibration.cpp/h (NVS lagring)
+└── config.h (Konstanter)
+
+
+Gevinst: Nemmere vedligeholdelse, genbrug af moduler, enhedstest muligt.
+
+===============================================================================
+§6.  PRAKTISK ANVENDELSE OG KOMMERCIALISERING
+===============================================================================
+6.1  Kommercialiseringsforberedelse
+Med implementering af forbedringerne vil projektet være:
+- Produktionsklart: Persistent kalibrering eliminerer største barriere
+- Brugervenligt: Menusystem gør det tilgængeligt for ikke-tekniske brugere
+- Professionelt: Temperaturkompensation og statistik til laboratoriebrug
+- Integrerbart: Udvidet SCPI til automatiserede testsystemer
+
+6.2  Markedssegmenter
+- Reparationsværksteder: Simpelt interface, pålidelige målinger
+- Produktionstest: SCPI-integration, datalogging
+- Uddannelse: Fuldt dokumenteret, åben kode
+- Hobby/prosumer: Lav pris, høj kvalitet
+
+6.3  Produktvarianter
+- Basisudgave: Nuværende hardware med forbedret firmware
+- Pro-udgave: Med SD-kort, temperatursensor, ekstra knapper
+- OEM-modul: Kun PCB med firmware til integration i andre systemer
+
+===============================================================================
+§7.  LITTERATUR OG REFERENCE
+===============================================================================
+7.1  Referencemateriale
+ESP32 NVS Dokumentation: 
+https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/nvs_flash.html
+
+SCPI Standard: IEEE 488.2, "Standard Commands for Programmable Instruments"
+
+OneWire Protokol: Maxim Integrated DS18B20 Datablad
+
+SD-kort Library: Arduino SD Library Dokumentation
+
+7.2  Nøglekonklusioner
+Forbedringerne adresserer alle væsentlige svagheder i det nuværende system:
+- Kalibrering: Gør produktet feltanvendeligt og produktionsegnet
+- Temperaturkompensation: Forbedrer nøjagtighed under realistiske forhold
+- Brugerflade: Gør systemet tilgængeligt for bredere målgruppe
+- SCPI: Åbner for professionel og industrielt brug
+
+Med disse forbedringer vil ESR-meteret være fuldt konkurrencedygtigt med 
+kommercielle løsninger som Peak ESR60, men til en brøkdel af prisen og med 
+fuld åbenhed i design og dokumentation.
+
+===============================================================================
+§8.  NETLISTE TILFOREDRINGER
+===============================================================================
+Tilføj følgende komponenter til eksisterende netliste:
+
+8.1  Temperatursensor DS18B20
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VDD        +3.3V                          Strømforsyning
+   GND        AGND                           Ground
+   DQ         GPIO4                          OneWire data linje
+   4.7kΩ      Mellem DQ og +3.3V             Pull-up modstand
+
+8.2  SD-kort modul
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VCC        +3.3V                          Strømforsyning
+   GND        DGND                           Ground
+   CS         GPIO5                          Chip select
+   MOSI       GPIO23                         SPI data out
+   MISO       GPIO19                         SPI data in
+   SCK        GPIO18                         SPI clock
+
+8.3  Ekstra knap til menu-navigation (valgfri)
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   SW3        Side 1: GPIO25                 Menu navigation/selection
+              Side 2: DGND                   Aktiv lav med pull-up
+
+===============================================================================
+§9.  TESTPROTOKOLLER
+===============================================================================
+9.1  Kalibreringstest (T.CAL.001)
+- Test formål: Verificer persistent kalibreringslagring
+- Test procedure:
+  1. Udfør kalibrering med 5 kendte referencemodstande
+  2. Gem kalibrering via SCPI eller menu
+  3. Genstart system
+  4. Indlæs kalibrering og verificér nøjagtighed
+- Acceptkriterie: Nøjagtighed inden for 5% for alle referencemodstande
+
+9.2  Temperaturkompensationstest (T.TEMP.001)
+- Test formål: Verificer temperaturkompensationsalgoritme
+- Test procedure:
+  1. Mål ESR ved 25°C reference
+  2. Opvarm system til 35°C med varmepistol
+  3. Mål igen og sammenlign med forventet kompenseret værdi
+- Acceptkriterie: Afvigelse < 2% efter kompensation
+
+9.3  Menusystem test (T.MENU.001)
+- Test formål: Verificer menu-navigation og funktionalitet
+- Test procedure:
+  1. Naviger gennem alle menu-punkter
+  2. Test kort og langt knaptryk
+  3. Verificer korrekt display-opdatering
+- Acceptkriterie: Ingen systemlåsninger, korrekt visning
+
+===============================================================================
+§10.  KONKLUSION
+===============================================================================
+Projektet er exceptionelt veldokumenteret og har solid teknisk fundament. 
+De identificerede forbedringsmuligheder adresserer specifikke svagheder der 
+forhindrer fuld kommercialisering. 
+
+Hovedanbefalinger i prioriteterækkefølge:
+1. Implementer persistent kalibrering (kritisk for anvendelighed)
+2. Tilføj temperatursensor og kompensation (forbedrer nøjagtighed)
+3. Udvikl simpelt menusystem (forbedrer brugervenlighed)
+4. Udvid SCPI-kommandoer (åbner for professionelt brug)
+
+Med disse forbedringer vil ESR-meteret være et fuldt funktionelt, 
+produktionsklart instrument egnet til både hobbybrug, reparationsværksteder, 
+uddannelsesinstitutioner og industrielle applikationer.
+
+Den eksisterende højkvalitetsdokumentation reducerer implementeringstiden 
+markant og gør projektet til en ideel platform for videreudvikling og 
+kommercialisering.
+===============================================================================
