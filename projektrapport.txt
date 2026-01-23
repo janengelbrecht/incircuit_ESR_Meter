@@ -175,14 +175,14 @@ Lav udgangsimpedans (under 1 Ω)
 Enhedsforstærkning (forstærkning = 1)
 
 Beregning af testsignal-amplitude:
-Givet krav H.SIG.001: 0,1V peak-to-peak ved probene.
+Givet krav H.SIG.001: 0,1V peak-to-peak ved proberne.
 
 Ved brug af et multiturn præcisionspotentiometer (10 omdrejninger) justeres forholdet mellem 
 potentiometerets justerede modstand og totale modstand til at opnå en spændingsdeling. 
 Dette ganges med bufferens forstærkning (1) for at få den endelige amplitude.
 
-Med TS3V902 i rail-to-rail konfiguration ved ±3,3V forsyning, er det lineære udgangsområde:
-Udgangespænding = Forsyningsspænding - Mætningsspænding = 3,3V - 0,1V = 3,2V positivt, 
+Med TS3V902 i rail-to-rail konfiguration ved ±5.0V forsyning, er det lineære udgangsområde:
+Udgangespænding = Forsyningsspænding - Mætningsspænding = 5V - 0,1V = 5V positivt, 
 og tilsvarende for negativ side.
 
 Valg af potentiometer:
