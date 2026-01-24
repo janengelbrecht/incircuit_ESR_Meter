@@ -213,12 +213,207 @@ No persistent storage for configuration/calibration
 Monolithic file structure limits scalability
 
 Future Enhancements
+
+===============================================================================
+1. ARE THE MISSING FUNCTIONS PROBLEMATIC?
+===============================================================================
+SCPI (Minimally implemented)
+Assessment: NOT PROBLEMATIC
+
+  - Hobby use: Almost no hobbyists will ever use SCPI
+  - Service workshop: Most technicians will simply measure directly on the display
+  - Actual need: Only if you want to automate tests or log data to PC
+  - Conclusion: For 95% of users, basic SCPI is more than sufficient
+
+Statistical functions (Not implemented)
+Assessment: NOT CRITICAL
+
+  - Hobby use: Rarely relevant - typically only one measurement is desired
+  - Service workshop: Some might appreciate averaging over several measurements
+    for unstable components
+  - Workaround: You can manually note 5-10 measurements and calculate yourself
+  - Conclusion: "Nice to have", but not essential
+
+Calibration (Requires recompile)
+Assessment: THIS IS PROBLEMATIC ⚠️
+
+  This requires deeper analysis:
+
+===============================================================================
+2. THE CALIBRATION ISSUE - CRITICAL ANALYSIS
+===============================================================================
+What actually drifts in an ESR meter?
+
+Components that DO NOT drift significantly:
+  - Precision resistors (0.1%, metal film): Negligible drift (<50 ppm/year)
+  - AD9850 DDS generator: Quartz-controlled, extremely stable
+  - Ceramic capacitors in the signal path: Minimal drift with correct voltage rating
+
+Components that CAN drift:
+  - ADS1115 ADC ⚠️
+      Offset drift: ±0.03 µV/°C typical
+      Gain drift: ±5 ppm/°C typical
+      Over time: Can change 0.1-0.2% over several years
+      Conclusion: Moderate drift, but over a LONG time
+
+  - Op-amp in the superdiode circuit ⚠️⚠️
+      Offset voltage: Can drift with temperature and age
+      This is CRITICAL: Directly affects the linearity of the ESR measurement
+      LT1498 offset: ±25 µV typical, but can drift to 100+ µV over years
+
+  - Kelvin probes ⚠️⚠️⚠️
+      Contact resistance: Changes with wear, oxidation, mechanical wear
+      This is MOST CRITICAL: Direct source of error in the measurement
+      An oxidized probe can add 0.1-0.5 Ω offset
+
+-------------------------------------------------------------------------------
+Factory calibration - Is it enough?
+-------------------------------------------------------------------------------
+NO, unfortunately not in the long term:
+
++-------------------+------------+----------------+--------------------------+
+| Factor            | Time frame | Impact         | Requires recalibration?  |
++-------------------+------------+----------------+--------------------------+
+| ADC gain drift    | 2-5 years  | 0.1-0.3% error | No (within spec)         |
+| ADC offset drift  | 2-5 years  | ±50 µV         | No (negligible)          |
+| Op-amp drift      | 3-7 years  | 0.2-0.5% error | Maybe                    |
+| Probe wear        | 6-12 months| 0.1-1.0 Ω error| YES ⚠️⚠️⚠️               |
+| Temperature change| Daily      | 0.5-2% error   | No (but compensation     |
+|                   |            |                | desirable)               |
++-------------------+------------+----------------+--------------------------+
+
+The Real Problem:
+  The main problem is NOT component drift - it is MECHANICAL wear on the probes!
+  A service workshop measuring 20-50 capacitors daily will experience:
+    - Oxidation of probe contacts
+    - Mechanical wear on springs
+    - Contamination with flux/dirt
+  This CANNOT be solved with a single factory calibration.
+
+===============================================================================
+3. WHAT WILL HOBBYISTS/TECHNICIANS MISS?
+===============================================================================
+Critical shortcomings:
+  A) Simple recalibration without PC ⚠️⚠️⚠️
+     Scenario: A service technician notices the meter shows 0.15 Ω on a known
+     0 Ω reference.
+     Current solution:
+       - Connect PC
+       - Install Arduino IDE
+       - Modify calibration code
+       - Upload firmware
+       - Test
+     Ideally:
+       Menu: "Calibration → Zero point"
+       Short circuit probes
+       Press OK
+       Done
+     Conclusion: This is a CRITICAL shortcoming for professional use.
+
+  B) Temperature compensation ⚠️⚠️
+     Winter: Workshop at 15°C
+     Summer: Workshop at 30°C
+     Difference: 0.5-2% measurement error
+     Solution in firmware: Already implemented, but not activated!
+
+  C) Averaging of measurements ⚠️
+     For unstable components (leaky capacitors), 5-10 measurements with
+     averaging would be useful.
+     Current workaround: Manual noting and calculation.
+
+Less important shortcomings:
+  - Data logging: Only relevant for analysis work
+  - Advanced SCPI: Only for automation
+  - Statistics display: Nice to have, not critical
+
+===============================================================================
+4. CONCRETE RECOMMENDATIONS
+===============================================================================
+Minimal solution (acceptable for hobby):
+  Price: 0 hours extra development
+  Result: Works, but requires PC for recalibration
+  Suitable for: Hobbyists who rarely measure
+
+Service technician solution (recommended):
+  // Add to menu system:
+  Menu Item: "Zero Calibration"
+    1. Short circuit probes
+    2. Press OK
+    3. System saves offset in NVS
+    4. Next measurement is automatically corrected
+  // Implementation: 50-100 lines of code
+  // Benefit: ENORMOUS for practical use
+
+Professional solution (optimal):
+  + Zero calibration via menu
+  + 3-point calibration (0Ω, 1Ω, 10Ω)
+  + Temperature compensation activated
+  + Estimated development: 1-2 days
+  + Benefit: Production ready
+
+===============================================================================
+5. DIRECT ANSWERS TO YOUR QUESTIONS
+===============================================================================
+Q1: Are missing functions problematic?
++---------------------+-------------+-------------------+----------------------+
+| Function            | Hobby use   | Service workshop  | Criticality          |
++---------------------+-------------+-------------------+----------------------+
+| SCPI minimal        |   OK        |   OK              | Low                  |
+| No statistics       |   OK        |   Desirable       | Medium               |
+| No recalibration    | Acceptable  | PROBLEM           | HIGH                 |
++---------------------+-------------+-------------------+----------------------+
+
+Q2: Do components drift over time?
+  - ADC: Yes, but slowly (0.1-0.3% over 3-5 years) → Not critical
+  - Op-amps: Yes, moderately (0.2-0.5% over 3-7 years) → Acceptable
+  - Probes: YES, QUICKLY (0.1-1Ω over 6-12 months) → CRITICAL ⚠️⚠️⚠️
+
+Q3: Is factory calibration enough?
+  - For hobbyists: Probably yes (rarely measure)
+  - For service workshop: NO - the probes wear out
+  - Solution: Simple zero calibration via menu is ESSENTIAL
+
+Q4: Will users miss anything?
+  - Hobbyists will miss: Nothing critical, works fine as is
+  - Service technicians will miss:
+      ⚠️⚠️⚠️ Zero calibration without PC (CRITICAL)
+      ⚠️⚠️ Temperature compensation (important)
+      ⚠️ Averaging of measurements (useful)
+
+===============================================================================
+6. MY RECOMMENDATION
+===============================================================================
+For hobby use: The firmware is 100% acceptable as is.
+For service workshops: Add only this one feature:
+
+// Example code:
+void menu_zero_calibration() {
+    lcd.clear();
+    lcd.print("Short circuit probes");
+    lcd.setCursor(0,1);
+    lcd.print("Press OK");
+    while(!button_pressed) { delay(10); }
+    int32_t zero_offset = adc_read_oversampled(PGA_2X_INDEX);
+    preferences.begin("esr-cal", false);
+    preferences.putInt("zero_offset", zero_offset);
+    preferences.end();
+    lcd.clear();
+    lcd.print("Calibrated!");
+}
+
+This takes 2 hours of work and solves 90% of the problem.
+
+Conclusion: The firmware is excellent for hobby use, but the critical shortcoming
+for professional use is zero calibration without PC. All other "shortcomings" are secondary.
+===============================================================================
 Persistent Storage: Save calibration data to ESP32 NVS
 Full SCPI Implementation: Complete command set with error queues
 Modular Architecture: Split firmware into separate .h/.cpp files
 Enhanced UI: Menu system with status indicators
 Temperature Compensation: Real-time ESR correction
 Data Logging: SD card support for measurement records
+
+
 
 ⚠️ Safety & Usage Notes
 
@@ -282,3 +477,4 @@ Component manufacturers for high-quality parts and documentation
 Open-source community for inspiration and reference designs
 
 Test equipment manufacturers whose instruments provided validation references
+
