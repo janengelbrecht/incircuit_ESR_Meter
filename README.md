@@ -1,250 +1,259 @@
-# In-Circuit ESR Meter
+What is an ESR Meter?
+An ESR meter is a specialized two-terminal instrument designed to measure the equivalent series resistance (ESR) of real-world capacitors. One of its key advantages is that it often allows testing without removing the capacitor from the circuit. Standard tools like capacitance meters cannot measure ESR, although some combined devices can check both ESR and out-of-circuit capacitance. Conventional DC milliohmmeters or multimeters are unsuitable because they rely on steady direct current, which cannot pass through a capacitor. Most ESR meters can also measure very low, non-inductive resistances, making them useful for additional tasks beyond capacitor testing.
 
-![Status](https://img.shields.io/badge/Status-Complete-green)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Version](https://img.shields.io/badge/Version-1.00-orange)
-![ESP32](https://img.shields.io/badge/ESP32-WROOM--32-blue)
+Why ESR Matters
 
-## What is an ESR Meter?
+Aluminum electrolytic capacitors naturally exhibit higher ESR, which worsens over time due to aging, heat, and ripple current. This degradation can lead to equipment malfunctions. In older devices, symptoms included hum and poor performance, while modern systems—especially switch-mode power supplies—are extremely sensitive to ESR. A capacitor with excessive ESR can cause voltage instability, system failure, or even permanent damage. Despite these risks, electrolytic capacitors remain popular because they offer high capacitance at low cost and compact size, typically ranging from a few microfarads to tens of thousands.
+Faulty capacitors often show physical signs like bulging or leakage as internal chemicals break down into gas. However, visual inspection isn’t foolproof—capacitors that look fine can still have dangerously high ESR, detectable only through measurement.
 
-An ESR meter is a specialized two-terminal instrument designed to measure the equivalent series resistance (ESR) of real-world capacitors. One of its key advantages is that it often allows testing with the capacitor still in circuit.
+How Accurate Does It Need to Be?
 
-### Why ESR Matters
+For troubleshooting, precise ESR values are rarely necessary; any functional meter will usually suffice. When accuracy is critical, measurements must be taken under controlled conditions because ESR varies with frequency, voltage, and temperature. General-purpose ESR meters, which operate at fixed frequencies, are not suitable for high-precision lab work.
 
-Aluminum electrolytic capacitors naturally exhibit higher ESR, which worsens over time due to aging, heat, and ripple current. This degradation can lead to equipment malfunctions. In older devices, electrolytics can fail mechanically (bulging or leakage), but visual inspection isn’t foolproof—capacitors that look fine can still have degraded ESR.
+Measuring ESR
 
-### How Accurate Does It Need to Be?
+The basic principle involves applying an AC signal at a frequency where the capacitor’s reactance is negligible, often using a voltage divider setup. Quick checks can be done with improvised tools—a square-wave generator and oscilloscope, or a sine-wave source with an AC voltmeter—comparing results against a known good capacitor.
+Professional ESR meters simplify the process, enabling rapid testing of multiple components. Instruments like LCR bridges or Q meters can also measure ESR accurately, but dedicated ESR meters are inexpensive, single-purpose devices focused on identifying capacitors with unacceptable resistance.
 
-For troubleshooting, precise ESR values are rarely necessary; any functional meter will usually suffice. When accuracy is critical, measurements must be taken under controlled conditions because ESR varies with temperature, frequency, and applied voltage.
+How ESR Meters Work
 
-## Measuring ESR
+Most ESR meters briefly discharge the capacitor and send a short current pulse through it. Because the pulse is too short for significant charging, the resulting voltage reflects the ESR (plus a negligible capacitive effect). The meter calculates resistance by dividing voltage by current and displays the result in ohms or milliohms. This process repeats thousands of times per second.
+Alternatively, some meters use high-frequency AC signals so that capacitive reactance is minimal compared to ESR. Circuit design typically targets capacitors of one microfarad or larger, covering common aluminum electrolytics prone to ESR issues.
 
-The basic principle involves applying a short current pulse or a high-frequency AC signal where the capacitor’s reactance is negligible, and measuring the resulting voltage drop across the ESR. Professional ESR meters simplify the process, enabling rapid testing of multiple components. Instruments like LCR bridges can also measure ESR accurately, but dedicated ESR meters are inexpensive and optimized for quick troubleshooting.
+Interpreting Results
 
-## How ESR Meters Work
+Acceptable ESR depends on capacitance—larger capacitors generally have lower ESR. Values can be checked against typical charts or compared to new components. Manufacturer specifications exist but are rarely needed. In practice, ESR problems escalate quickly: once resistance starts rising, it often jumps from acceptable to clearly faulty. For large capacitors, anything above a few ohms is usually unacceptable.
+Because ESR is far lower than other parallel resistances in a circuit, in-circuit testing is possible. ESR meters use low voltages to avoid activating semiconductor junctions, which could distort readings.
 
-Most ESR meters briefly discharge the capacitor and send a short current pulse through it. Because the pulse is too short for significant charging, the resulting voltage reflects the ESR (plus a negligible reactive component). Alternatively, some meters use high-frequency AC signals so that capacitive reactance is minimal compared to ESR. Circuit designs typically target capacitors of 1 µF or larger, covering common electrolytics.
+Limitations
 
-## Interpreting Results
 
-Acceptable ESR depends on capacitance—larger capacitors generally have lower ESR. Values can be checked against typical charts or compared to new components. Manufacturer specifications exist but may not reflect in-circuit conditions. Because ESR is far lower than other parallel resistances in a circuit, in-circuit testing is possible. ESR meters use low voltages to avoid activating semiconductor junctions, which could distort readings.
+ESR meters do not measure capacitance; that requires a separate capacitance meter.
+A shorted capacitor will appear ideal on an ESR meter, so an ohmmeter check is recommended.
+ESR can vary with operating conditions; a capacitor may test fine when cold but fail under load.
+Connecting an ESR meter to a charged or live capacitor can damage the meter, though protective diodes help mitigate this risk.
+Inductive components distort readings, so ESR meters cannot measure transformer windings or similar parts.
 
-## Limitations
 
-- ESR meters do not measure capacitance; that requires a capacitance meter.
-- A shorted capacitor will appear ideal on an ESR meter, so an ohmmeter check is recommended.
-- ESR can vary with operating conditions; a capacitor may test fine when cold but fail under load.
-- Connecting an ESR meter to a charged or live capacitor can damage the meter, though protective diodes help mitigate this risk.
-- Inductive components distort readings, so ESR meters cannot measure transformer windings or similar parts.
+Other Applications
 
-## Other Applications
+Essentially, an ESR meter functions as a pulsed or high-frequency AC milliohmmeter. It can measure low resistances such as battery internal resistance, switch contacts, or PCB trace segments. Its low test voltage prevents false readings caused by semiconductor junctions, making it useful for locating short circuits—even among parallel components. Tweezer-style probes are handy for densely packed boards, especially with surface-mount technology.
 
-An ESR meter can function as a pulsed or high-frequency AC milliohmmeter. It can measure low resistances such as battery internal resistance, switch contacts, or PCB trace segments.
+In-Circuit ESR Meter
 
-## Project Overview
+A professional-grade, open-source ESR (Equivalent Series Resistance) meter designed for safe in-circuit testing of electrolytic capacitors. This project includes complete hardware, firmware, and documentation for building a precision measurement instrument suitable for hobbyists, technicians, and educational use.
 
-The In-Circuit ESR Meter is a professional-grade, open-source design for safe in-circuit testing of electrolytic capacitors. This project includes hardware, firmware, and documentation.
+https://img.shields.io/badge/Status-Complete-green
+https://img.shields.io/badge/License-Proprietary-blue
+https://img.shields.io/badge/Version-1.00-orange
+https://img.shields.io/badge/ESP32-WROOM--32-blue
 
-### Key Features
+📋 Project Overview
 
-- Safe In-Circuit Testing: ≤0.1 V test signal prevents semiconductor activation  
-- High Precision: 1 mΩ resolution, ≤5% accuracy over 0–10 Ω range  
-- Professional Design: 4-wire Kelvin connections, EMI/EMC/ESD protection  
-- Dual Interface: LCD display + SCPI command protocol for automation  
-- Robust Operation: Hardware watchdog, error recovery, oversampling
+The In-Circuit ESR Meter measures the equivalent series resistance of electrolytic capacitors (0-10 Ω range) with 1 mΩ resolution and ≤5% accuracy using a 100 kHz test signal limited to 0.1V p-p for safe in-circuit operation. The system implements 4-wire Kelvin measurement techniques, automatic PGA (Programmable Gain Amplifier) ranging, and comprehensive error handling.
 
-## Hardware Design
+Key Features
 
-### Core Components
+Safe In-Circuit Testing: ≤0.1V test signal prevents semiconductor activation
+High Precision: 1 mΩ resolution, ≤5% accuracy over 0-10 Ω range
+Professional Design: 4-wire Kelvin connections, EMI/EMC/ESD protection
+Dual Interface: LCD display + SCPI command protocol for automation
+Robust Operation: Hardware watchdog, error recovery, oversampling
 
-- MCU: ESP32-WROOM-32 (WiFi/Bluetooth capable)  
-- DDS Generator: AD9850 for a 100 kHz sine wave  
-- ADC: ADS1115 16-bit ΔΣ ADC with programmable gain (4×, 8×, 16×)  
-- OpAmps: TS3V902 rail-to-rail CMOS operational amplifiers  
-- Display: 16×2 LCD with I2C backpack  
-- Power: USB-C input with +3.3V LDO and -5V switched-capacitor converter
+🔧 Hardware Design
 
-### Circuit Architecture
+Core Components
 
-- Signal Generation: AD9850 DDS → Buffer (TS3V902 voltage follower)  
-- Measurement Circuit: 10 µF coupling capacitor + 10 Ω precision reference resistor  
-- Differential Amplification: 47× gain differential amplifier (TS3V902)  
-- Rectification: Precision superdiode full-wave rectifier (2× TS3V902 + Schottky diodes)  
-- Filtering: 3rd-order Sallen–Key Butterworth low-pass filter (100 Hz cutoff)  
-- ADC Protection: Schottky clamping diodes before ADS1115 input  
-- Kelvin Connections: 4-pin isolated probe connections
+MCU: ESP32-WROOM-32 (WiFi/Bluetooth capable)
+DDS Generator: AD9850 for precise 100 kHz sine wave
+ADC: ADS1115 16-bit ΔΣ ADC with programmable gain (4×, 8×, 16×)
+OpAmps: TS3V902 rail-to-rail CMOS operational amplifiers
+Display: 16×2 LCD with I2C backpack
+Power: USB-C input with +3.3V LDO and -5V switched capacitor converter
 
-### PCB Design
+Circuit Architecture
 
-- 2-layer FR-4, 1.6 mm thickness  
-- Complete ground planes on both sides  
-- EMI guarding around analog signals  
-- ESD protection on all external connections  
-- Analog/digital separation with ≥5 mm spacing
+Signal Generation: AD9850 DDS → Buffer (TS3V902 voltage follower)
+Measurement Circuit: 10 μF coupling capacitor + 10 Ω precision reference resistor
+Differential Amplification: 47× gain differential amplifier (TS3V902)
+Rectification: Precision superdiode full-wave rectifier (2× TS3V902 + Schottky diodes)
+Filtering: 3rd-order Sallen-Key Butterworth low-pass filter (100 Hz cutoff)
+ADC Protection: Schottky clamping diodes before ADS1115 input
+Kelvin Connections: 4-pin isolated probe connections
 
-## Firmware
+PCB Design
 
-### Architecture
+2-layer FR-4, 1.6 mm thickness
+Complete ground planes on both sides
+EMI guarding around analog signals
+ESD protection on all external connections
+Analog/digital separation with 5 mm minimum spacing
 
-- Language: Arduino C++ (C++14 compatible)  
-- Paradigm: Structured programming (no classes)  
-- Memory: Static allocation only (no dynamic allocation)  
-- Structure: Single .ino file with modular organization
+💻 Firmware
 
-### Key Modules
+Architecture
 
-- HAL (Hardware Abstraction Layer): AD9850, ADS1115, LCD, buttons  
-- ADC Processing: 64× oversampling, automatic PGA range selection  
-- ESR Calculation: Table-based linear interpolation with PROGMEM storage  
-- State Machine: Deterministic system flow control  
-- SCPI Interface: Standard instrument protocol for remote control (basic commands implemented)  
-- Watchdog: 3-second timeout with automatic recovery
+Language: Arduino C++ (C++14 compatible)
+Paradigm: Structured programming (no classes)
+Memory: Static allocation only (no malloc/free)
+Structure: Single .ino file with modular organization
 
-### SCPI Commands Supported
+Key Modules
 
-- *IDN? — Identification query  
-- MEASure:ESR? — Perform ESR measurement  
-- SYSTem:PRESet — System reset to defaults  
-- DISPlay:MODE <RAW|ESR> — Set display mode  
-- SYSTem:COMMunication <ON|OFF> — Enable/disable SCPI mode  
-- *TST? — Self-test  
-- SYSTem:VERSION? — Firmware version  
-- SYSTem:HELP — List available commands
+HAL (Hardware Abstraction Layer): AD9850, ADS1115, LCD, buttons
+ADC Processing: 64× oversampling, automatic PGA range selection
+ESR Calculation: Table-based linear interpolation with PROGMEM storage
+State Machine: Deterministic system flow control
+SCPI Interface: Standard instrument protocol for remote control
+Watchdog: 3-second timeout with automatic recovery
 
-## Documentation Structure
+SCPI Commands Supported
+*IDN? - Identification query
+MEASure:ESR? - Perform ESR measurement
+SYSTem:PRESet - System reset to defaults
+DISPlay:MODE <RAW|ESR> - Set display mode
+SYSTem:COMMunication <ON|OFF> - Enable/disable SCPI mode
+*TST? - Self-test
+SYSTem:VERSION? - Firmware version
+SYSTem:HELP - List available commands
 
-- Line-by-line comments: Every code line has explanatory comments  
-- Doxygen formatting: Professional function documentation  
-- Hardware netlist: Complete component listing with connections  
-- Test procedures: Validation and calibration instructions  
-- Developer guide: Architectural overview and enhancement roadmap
+📁 Documentation Structure
 
-## Getting Started
+Documentation Features
 
-### Prerequisites
+Line-by-line comments: Every code line has explanatory comments
+Doxygen formatting: Professional function documentation
+Hardware netlist: Complete component listing with connections
+Test procedures: Validation and calibration instructions
+Developer guide: Architectural overview and enhancement roadmap
 
-- Hardware: All components from netlist (see hardware report)  
-- Software: Arduino IDE 2.x or PlatformIO  
-- Libraries: Wire, Adafruit_ADS1X15, LiquidCrystal_I2C  
-- ESP32 Board Support: ESP32 Arduino package
+🚀 Getting Started
 
-### Building & Flashing
+Prerequisites
 
-1. Install required libraries via the Arduino Library Manager  
-2. Select board: ESP32 Wrover Module  
-3. Set upload speed to 921600  
-4. Open `ESR_Meter.ino` and upload to ESP32  
-5. Connect via serial monitor at 115200 baud
+Hardware: All components from netlist (see hardware report)
+Software: Arduino IDE 2.x or PlatformIO
+Libraries: Wire, Adafruit_ADS1X15, LiquidCrystal_I2C
+ESP32 Board Support: ESP32 Arduino package
 
-## Calibration
+Building & Flashing
+
+Install required libraries via Arduino Library Manager
+Select board: ESP32 Wrover Module
+Set upload speed to 921600
+Open ESR_Meter.ino and upload to ESP32
+Connect via serial monitor at 115200 baud
+
+Calibration
 
 Important: The firmware requires calibration before first use!
+Prepare precision reference resistors (0.1 Ω to 10 Ω)
+Run emergency calibration routine via SCPI or serial command
+Measure actual ADC values for each known resistance
+Update PROGMEM tables in firmware with calibration data
+Re-flash firmware with calibrated tables
 
-- Prepare precision reference resistors (0.1 Ω to 10 Ω)  
-- Run emergency calibration routine via SCPI or serial command  
-- Measure actual ADC values for each known resistance  
-- Update PROGMEM tables in firmware with calibration data  
-- Re-flash firmware with calibrated tables
+🧪 Testing & Validation
 
-_Note:_ See the Firmware/Calibration section for exact calibration procedure and sample scripts.
+Performance Specifications
 
-## Testing & Validation
+ESR Range: 0-10 Ω
+Resolution: 1 mΩ
+Accuracy: ≤5% of reading
+Test Frequency: 100 kHz ±100 ppm
+Test Signal: ≤0.1V p-p at probes
+Measurement Time: ≤100 ms
+Power Consumption: ~280 mA typical
 
-### Performance Specifications
+Validation Tests
 
-- ESR Range: 0–10 Ω  
-- Resolution: 1 mΩ  
-- Accuracy: ≤5% of reading  
-- Test Frequency: 100 kHz ±100 ppm  
-- Test Signal: ≤0.1 V p-p at probes  
-- Measurement Time: ≤100 ms  
-- Power Consumption: ~280 mA typical
+Precision Test: Measure known resistors (0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 9.0, 10.0 Ω)
+Resolution Test: Verify 1 mΩ distinction capability
+Safety Test: Confirm ≤0.1V p-p signal at test points
+Robustness Test: ESD and EMI immunity
 
-### Validation Tests
+👥 Use Cases
 
-- Precision Test: Measure known resistors (0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 9.0, 10.0 Ω)  
-- Resolution Test: Verify 1 mΩ distinction capability  
-- Safety Test: Confirm ≤0.1 V p-p signal at test points  
-- Robustness Test: ESD and EMI immunity
+1. Hobbyist Electronics Repair
 
-## Use Cases
+Troubleshoot faulty electrolytic capacitors in PCBs
+Verify new capacitors before installation
+Periodic maintenance of audio equipment and power supplies
 
-1. Hobbyist Electronics Repair — Troubleshoot faulty electrolytic capacitors, verify new caps before installation  
-2. Professional Service Workshop — Quick diagnosis of power supplies, verification of repairs  
-3. Educational Applications — Lab exercises on capacitor properties and measurement principles  
-4. Research & Development — Characterization, lifetime testing, production test development
+2. Professional Service Workshop
 
-## Project Status & Roadmap
+Quick diagnosis of power supply units
+Verification of repair work
+Documentation for customer reports
 
-### Current Status (v1.00)
+3. Educational Applications
+Laboratory exercises on capacitor properties
+Demonstration of ESR concept and practical implications
+Student projects on measurement principles
 
-- Hardware design and netlist: Complete  
-- Firmware: Fully functional with core features  
-- SCPI: Basic implementation available  
-- Documentation: Comprehensive
+4. Research & Development
+Characterization of new capacitor technologies
+Lifetime testing and aging experiments
+Development of production test procedures
 
-### Known Limitations
+🔍 Project Status & Roadmap
 
-- ESR tables require firmware re-flash for calibration updates  
-- SCPI implementation is partial (basic commands only)  
-- No persistent storage for configuration/calibration (current firmware requires reflashing for table changes)  
-- Monolithic file structure limits scalability
+Current Status (v1.00)
 
-### Recommended Enhancements
+Complete hardware design and netlist
+Fully functional firmware with core features
+Basic SCPI protocol implementation
+Comprehensive documentation
 
-- Persistent storage: Save calibration data to ESP32 NVS  
-- Zero calibration via device UI (menu) to allow recalibration without PC  
-- Temperature compensation: Activate and refine real-time correction  
-- Modular firmware: Split into .h/.cpp files for maintainability  
-- Data logging and improved SCPI: For production/automation use
+Known Limitations
 
-## Analysis & Recommendations (Calibration & Reliability)
+ESR tables require firmware re-flash for calibration updates
+SCPI implementation is partial (basic commands only)
+No persistent storage for configuration/calibration
+Monolithic file structure limits scalability
 
-### Summary
+Future Enhancements
+Persistent Storage: Save calibration data to ESP32 NVS
+Full SCPI Implementation: Complete command set with error queues
+Modular Architecture: Split firmware into separate .h/.cpp files
+Enhanced UI: Menu system with status indicators
+Temperature Compensation: Real-time ESR correction
+Data Logging: SD card support for measurement records
 
-- The largest real-world source of measurement error is probe contact resistance and mechanical wear. This can change quicker than component drift and is the primary reason in-field recalibration is necessary.  
-- ADC and op-amp drift occur slowly over years and are usually within acceptable limits for hobby use, but probe wear can require recalibration every 6–12 months in heavy use.
+⚠️ Safety & Usage Notes
 
-### Critical Recommendation
+Critical Warnings
 
-Add a "Zero Calibration" menu item so technicians can short the probes, press a button, and save the zero offset in NVS. This greatly improves practical usability for service environments.
+ALWAYS power off the circuit under test before connecting probes
+VERIFY test signal is ≤0.1V p-p before in-circuit measurements
+AVOID testing in high-voltage circuits (>50V)
+USE ESD precautions when handling the instrument
 
-Example code snippet (Arduino-style):
-```cpp
-void menu_zero_calibration() {
-  lcd.clear();
-  lcd.print("Short circuit probes");
-  lcd.setCursor(0,1);
-  lcd.print("Press OK");
-  while(!button_pressed) { delay(10); }
-  int32_t zero_offset = adc_read_oversampled(PGA_2X_INDEX);
-  preferences.begin("esr-cal", false);
-  preferences.putInt("zero_offset", zero_offset);
-  preferences.end();
-  lcd.clear();
-  lcd.print("Calibrated!");
-}
-```
+Maintenance
 
-This change can be implemented in ~2 hours of firmware work and will solve the main practical problem for service workshops.
+Monthly: Check physical probe connections, test with known references
+Every 6 months: Recalibrate with precision reference resistors
+Annually: Full system test, inspect PCB for corrosion
 
-## Safety & Maintenance
+📝 License & Attribution
 
-### Critical Warnings
+Copyright © 2026 Jan Engelbrecht Pedersen
+All rights reserved.
 
-- ALWAYS power off the circuit under test before connecting probes  
-- VERIFY test signal is ≤0.1 V p-p before in-circuit measurements  
-- AVOID testing in high-voltage circuits (>50 V)  
-- USE ESD precautions when handling the instrument
+The software is provided "as is", without warranty of any kind. Commercial use requires permission from the author.
 
-### Maintenance Schedule
+🙏 Acknowledgments
 
-- Monthly: Check probe condition and test with known references  
-- Every 6 months: Recalibrate with precision resistors (or use zero-cal feature)  
-- Annually: Full system check and PCB inspection for corrosion
+Reference Design: Based on established ESR measurement principles
+Component Manufacturers: Analog Devices (AD9850), Texas Instruments (ADS1115, TS3V902), Espressif (ESP32)
+Documentation Standards: Inspired by professional instrumentation documentation practices
+For questions, issues, or contributions, please refer to the detailed developer guide in the firmware comments.
 
-## License
+The project includes hardware, firmware, and documentation for a professional-grade ESR meter.
+We are to write in English and assume the project is under MIT License.
 
+
+📄 License
 MIT License
 
 Copyright (c) 2026 Jan Engelbrecht Pedersen
@@ -267,8 +276,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## Acknowledgments
+🙏 Acknowledgments
+Component manufacturers for high-quality parts and documentation
 
-- Component manufacturers: Analog Devices (AD9850), Texas Instruments (ADS1115, TS3V902), Espressif (ESP32)  
-- Open-source community and reference designs
+Open-source community for inspiration and reference designs
 
+Test equipment manufacturers whose instruments provided validation references

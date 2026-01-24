@@ -88,10 +88,25 @@
 // INKLUDERING AF BIBLIOTEKER
 // ============================================================================================================================
 
+/**
+ * @brief Inkluder wire bibliotek: I2C kommunikation til ADS1115 og LCD
+ */
 #include <Wire.h>               // I2C kommunikation til ADS1115 og LCD
-#include <Adafruit_ADS1X15.h>   // ADS1115 ADC-driver
-#include <LiquidCrystal_I2C.h>  // 16x2 LCD-display med I2C backpack
+/**
+ * @brief Inkluder Adafruit_ADS1X15 bibliotek: ADS1115 ADC-driver
+ */
+#include <Adafruit_ADS1X15.h>   // Adafruit ADS1115 ADC-driver
+/**
+ * @brief Inkluder LiquidCrystal_I2C bibliotek: 16x2 LCD-display med I2C backpack
+ */
+#include <LiquidCrystal_I2C.h>  // Adafruit 16x2 LCD-display med I2C backpack
+/**
+ * @brief Inkluder Watchdog timer for ESP32 bibliotek: Watchdog timer for ESP32
+ */
 #include <esp_task_wdt.h>       // Watchdog timer for ESP32
+/**
+ * @brief Inkluder Math bibliotek: Til sqrt og andre matematiske funktioner
+ */
 #include <math.h>               // Til sqrt og andre matematiske funktioner
 
 // ============================================================================================================================
@@ -152,21 +167,62 @@ typedef enum {
 // ============================================================================================================================
 
 // AD9850 DDS-generator pins (parallelt interface)
+/**
+ * @defgroup AD9850pins AD9850-DDS-generator-pins-(parallelt interface)
+ * @brief ESP32 pins forbundet til AD9850: parallelt interface
+ * @{
+ */
+/**
+ * @brief pin definition på ESP32: Word clock pin
+ */
 #define AD9850_W_CLK  16     // Word clock pin
+/**
+ * @brief pin definition på ESP32: Frequency update pin
+ */
 #define AD9850_FQ_UD  17     // Frequency update pin
+/**
+ * @brief pin definition på ESP32: Serial data pin
+ */
 #define AD9850_DATA   18     // Serial data pin
+/**
+ * @brief pin definition på ESP32: Reset pin
+ */
 #define AD9850_RESET  19     // Reset pin
+/** @} */ // Slut på gruppen AD9850pins
 
 // Knappins (med intern pull-up)
+/**
+ * @brief pin definition på ESP32: Knap1: Skift mellem RAW_ADC og ESR_RESULT
+ */
 #define BUTTON1_PIN   27     // Knap 1: Skift mellem RAW_ADC og ESR_RESULT
+/**
+ * @brief pin definition på ESP32: Knap2: Skift mellem normal og SCPI kommunikation
+ */
 #define BUTTON2_PIN   33     // Knap 2: Skift mellem normal og SCPI kommunikation
 
 // I2C konfiguration
+/**
+ * @defgroup I2C_config I2C konfiguration
+ * @brief ESP32 pins forbundet som I2C interface
+ * @{
+ */
+/**
+ * @brief pin definition på ESP32: I2C_SDA: I2C data pin
+ */
 #define I2C_SDA       21     // I2C data pin
+/**
+ * @brief pin definition på ESP32: I2C_SCL: I2C clock pin
+ */
 #define I2C_SCL       22     // I2C clock pin
+/**
+ * @brief Standard I2C adresse for 16x2 LCD
+ */
 #define LCD_I2C_ADDR  0x27   // Standard I2C adresse for 16x2 LCD
+/**
+ * @brief Standard I2C adresse for ADS1115
+ */
 #define ADS1115_ADDR  0x48   // Standard I2C adresse for ADS1115
-
+/** @} */  // Slut på gruppen I2C_config
 // ============================================================================================================================
 // GLOBALE VARIABLER - DEKLARATIONER
 // ============================================================================================================================
