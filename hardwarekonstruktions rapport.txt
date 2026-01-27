@@ -136,7 +136,7 @@ Påvirkningen er ukvantificerbar uden kendskab til det specifikke kredsløb.
 ==============================================================================================================================
 §5. Manglende information til konstruktion
 ==============================================================================================================================
-Specifikke komponentmodeller (H.MIS.001): Opamp-modeller (TS3V902 er specificeret), potentiometertype, 
+Specifikke komponentmodeller (H.MIS.001): Opamp-modeller (MCP6004 er specificeret), potentiometertype, 
 Schottky-dioder (f.eks. til beskyttelse og ensretter), switched capacitor IC, 
 LDO-regulator kræver specifik valg baseret på tilgængelighed og performance.
 
@@ -247,7 +247,7 @@ Kravspec: SRS-ESR-MIL-001
 
 ==============================================================================================================================
 
-4. OPERATIONSFORSTÆRKERE: TS3V902 (Dual OpAmp)
+4. OPERATIONSFORSTÆRKERE: MCP6004  (Quad OpAmp)
 
    KOMP.      FORBINDELSER                   FUNKTION / KOMPONENTER
    ----------------------------------------------------------------------------
@@ -381,7 +381,7 @@ Kravspec: SRS-ESR-MIL-001
    ----------------------------------------------------------------------------
    ESP32      WROOM-32                       1       U1
    AD9850     DDS Generator                  1       U2
-   TS3V902    Dual OpAmp (DIP14)             4       U3, U4, U5, U6
+   MCP6004    Quad OpAmp (DIP14)             4       U3, U4
    ADS1115    16-bit ADC                     1       U7
    16x2 LCD   I2C Display                    1       U8
    AMS1117-3.3 LDO Regulator                 1       U9
