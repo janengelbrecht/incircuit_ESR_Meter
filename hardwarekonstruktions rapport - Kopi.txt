@@ -1,0 +1,441 @@
+==============================================================================================================================
+|															     |
+|			Hardwarekonstruktionsrapport for In-Circuit ESR-meter						     |
+|															     |
+==============================================================================================================================
+| DOKUMENT ID:	HWKONS-ESR-MIL-001											     |
+| DATO:		19-01-25												     |
+| VERSION:	1.00													     |
+| SYSTEM:	INCIRCUIT ESR METER											     |
+| FORFATTER:	Jan Engelbrecht Pedersen										     |
+==============================================================================================================================
+§1. Præcis sammenfatning
+==============================================================================================================================
+Denne rapport specificerer hardwarekonstruktionen til et in-circuit ESR-meter baseret på kravspecifikation SRS-ESR-MIL-001. 
+Systemet implementerer 100 kHz sinustest med 0,1V amplitude (H.SIG.001) for sikker in-circuit måling af ESR i området 
+0-10 Ω (H.ESR.001) med 1 mΩ opløsning (H.PRC.001) og 5% præcision (H.PRC.002). 
+Konstruktionen implementerer bufferstadium med operationsforstærkeren 
+TS3V902 (3V rail-to-rail CMOS dual operational amplifier i DIP14-case) (H.GEN.002),
+ differentialforstærker med én operationsforstærker TS3V902 (H.AMP.001), superdiode-ensretter med to operationsforstærkere 
+TS3V902 (H.REC.001), tredjeordens Sallen-Key Butterworth-filter med operationsforstærkeren TS3V902 (H.FLT.001) og 
+ADS1115 ADC (H.ADC.001). PCB-designet implementerer 2-lags layout med EMI/EMC/ESD-beskyttelse (H.PCB.001) og 
+switched capacitor negativ forsyning (H.PWR.001.3).
+==============================================================================================================================
+§2. Definitioner og præcisering
+==============================================================================================================================
+2.1 Reference til kravspecifikation
+Rapporten refererer til kravspecifikation SRS-ESR-MIL-001 version 1.00 med fuld implementering af alle hardwarekrav (H-krav). 
+Specifikke kravkoder citeres ved relevante konstruktionsbeskrivelser.
+------------------------------------------------------------------------------------------------------------------------------
+2.2 Operationsforstærker-konfigurationer
+Buffer: Voltage follower konfiguration med TS3V902 operationsforstærkeren (H.GEN.002)
+
+Differentialforstærker: En operationsforstærker TS3V902 i differentiel forstærkerkonfiguration (H.AMP.001)
+
+Superdiode: To operationsforstærkere TS3V902 i præcisionshelbølgeensretter-konfiguration (H.REC.001)
+
+Lavpasfilter: Operationsforstærkeren TS3V902 i Sallen-Key konfiguration (H.FLT.001)
+==============================================================================================================================
+§3. Faglig analyse
+==============================================================================================================================
+3.1 Teoretisk fundament og kravopfyldelse
+Dette er veletableret viden. In-circuit ESR-måling ved 100 kHz undgår kondensatorens reaktans ved at vælge en frekvens 
+hvor den kapacitive reaktans er ubetydelig sammenlignet med ESR-værdier, hvilket opfylder H.SIG.001 og H.ESR.001.
+
+Ifølge etableret praksis implementeres Kelvin-måling (fire-leder) for at eliminere fejl fra ledningsmodstand og 
+kontaktmodstand, hvilket er kritisk for opfyldelse af H.PRC.001 (1 mΩ opløsning) og H.PRC.002 (5% præcision).
+------------------------------------------------------------------------------------------------------------------------------
+3.2 Signalkædedesign med kravreferencer
+______________________________________________________________________________________________________________________________
+3.2.1 DDS-generator og buffer (H.GEN.001, H.GEN.002)
+Implementeringen opfylder H.GEN.001 gennem AD9850 DDS-generator konfigureret til 100 kHz ren sinus med 0° fase og 
+frekvensstabilitet under 100 ppm. H.GEN.002 opfyldes gennem buffer implementeret med operationsforstærkeren TS3V902 i 
+voltage follower-konfiguration med multiturn præcisionspotentiometer for finjustering til 0,1V p-p ved testprobene.
+
+GIVEN: Krav om 100 kHz sinus med maksimalt 0,1V amplitude (H.SIG.001)
+SØGT: Implementering af DDS og buffer
+BEVIS/ARGUMENTATION:
+Trin 1: AD9850 DDS genererer 100 kHz digitalt (H.GEN.001)
+Trin 2: Buffer med operationsforstærkeren TS3V902 isolerer DDS fra belastning (H.GEN.002)
+Trin 3: Potentiometer justerer amplitude til 0,1V p-p (H.GEN.002)
+KONKLUSION: Signalkæde sikrer stabilt testsignal under sikkerhedsgrænse (H.LIM.002)
+------------------------------------------------------------------------------------------------------------------------------
+3.2.2 Målekreds og Kelvin-forbindelser (H.CPL.001)
+H.CPL.001 opfyldes gennem 10 µF lav-ESR koblingskondensator med 10 Ω præcisionsmodstand (±0,1%, <50 ppm/°C) og fire separate 
+ledere til DUT i Kelvin-konfiguration. Denne implementering sikrer korrekt AC-kobling og eliminering af ledningsmodstand.
+------------------------------------------------------------------------------------------------------------------------------
+3.2.3 Differentialforstærker (H.AMP.001)
+H.AMP.001 opfyldes gennem differentialforstærker implementeret med én operationsforstærker TS3V902 i differentiel 
+forstærkerkonfiguration med forstærkning 47× ±0,5%, CMRR >90 dB ved 100 kHz og indgangsimpedans ≥10 MΩ. 
+Denne konfiguration måler spændingsfaldet over referenceserie-modstanden med høj common-mode underdrukning.
+------------------------------------------------------------------------------------------------------------------------------
+3.2.4 Superdiode-ensretter (H.REC.001)
+H.REC.001 opfyldes gennem superdiode-ensretter implementeret med to operationsforstærkere TS3V902 i 
+præcisionshelbølgeensretter-konfiguration med Schottky-dioder (1N5817). 
+Konfigurationen reducerer diodens spændingsfald til under 15 mV ved 100 kHz med linearitet >99,9% over dynamisk område.
+------------------------------------------------------------------------------------------------------------------------------
+3.2.5 Lavpasfilter (H.FLT.001)
+H.FLT.001 opfyldes gennem tredjeordens Sallen-Key Butterworth aktivt filter implementeret med operationsforstærkeren 
+TS3V902 i Sallen-Key konfiguration med cutoff-frekvens 100 Hz ±1%, stopband dæmpning ≥40 dB ved 10 kHz og DC-output 
+ripple under 500 µV RMS. Komponentværdier beregnes til R1=R2=R3=1,59 kΩ (1%), C1=1 µF, C2=100 nF, C3=10 nF (filmkondensatorer). 
+Udgangen af dette filter beskyttes med to Schottky-dioder (f.eks. BAT54) inden signalet føres til ADC'en: 
+Den ene diodes anode forbindes fra filterudgangen til +3.2V forsyningen, og den anden diodes katode forbindes til 
+filterudgangen med dens anode forbundet til stel (AGND). Denne konfiguration sikrer klemning (clamping) 
+af signalet for at beskytte ADC-indgangen mod utilsigtede overspændinger.
+------------------------------------------------------------------------------------------------------------------------------
+3.2.6 ADC-system (H.ADC.001)
+H.ADC.001 opfyldes gennem ADS1115 16-bit ΔΣ ADC med PGA-indstillinger 4×, 8×, 16× forstærkning, intern 2,048V 
+reference ±0,05% og I2C interface ved 400 kHz. ADC-indgangen, som modtager signalet fra det aktive Sallen-Key filter, 
+er forud for indgangen beskyttet af de to Schottky-dioder som beskrevet i §3.2.5. 
+Denne implementering sikrer nødvendig opløsning for 1 mΩ måling ved 10 Ω fuld skala og robusthed mod transiente.
+------------------------------------------------------------------------------------------------------------------------------
+3.3 Strømforsyningsdesign med kravreferencer
+3.3.1 Positive forsyninger (H.PWR.001.1, H.PWR.001.2, H.PWR.001.4)
+H.PWR.001.1 opfyldes gennem USB-C input med 5V @ 500 mA minimum. H.PWR.001.2 opfyldes gennem 3,3V LDO regulator til ESP32, 
+operationsforstærkere TS3V902 og ADS1115. 
+------------------------------------------------------------------------------------------------------------------------------
+3.3.2 Negativ forsyning (H.PWR.001.3)
+H.PWR.001.3 opfyldes gennem switched capacitor konverter (ICL7660 eller tilsvarende) der genererer -5V til 
+operationsforstærkere TS3V902 for rail-to-rail operation. Decoupling med 100 nF keramisk + 10 µF tantal ved 
+hver IC opfylder H.PWR.001.5.
+------------------------------------------------------------------------------------------------------------------------------
+3.3.3 Grounding (H.PWR.001.6)
+H.PWR.001.6 opfyldes gennem separate AGND/DGND stjerner med enkelt forbindelsespunkt for at minimere ground loops og støj.
+------------------------------------------------------------------------------------------------------------------------------
+3.4 PCB-layout og mekanisk design med kravreferencer
+______________________________________________________________________________________________________________________________
+3.4.1 PCB-design (H.PCB.001)
+H.PCB.001.1 opfyldes gennem 2-lags FR-4 med 1,6 mm tykkelse. 
+H.PCB.001.2 opfyldes gennem spor/rum minimum 0,2 mm/0,2 mm for signal. 
+H.PCB.001.3 opfyldes gennem komplet masseplan på begge sider. 
+H.PCB.001.4 opfyldes gennem EMI-beskyttelse med gardering omkring analoge signaler. 
+H.PCB.001.5 opfyldes gennem ESD-beskyttelse med TVS-dioder på alle eksterne forbindelser. 
+H.PCB.001.6 opfyldes gennem analog og digital separation med 5 mm minimum afstand. 
+H.PCB.001.7 opfyldes gennem gulvstående 4-pol Kelvin-socket til probeforbindelser.
+------------------------------------------------------------------------------------------------------------------------------
+3.4.2 Mekanisk design (H.MEC.001)
+H.MEC.001.1 opfyldes gennem kabinet i ABS plast med EM-afskærmning. 
+H.MEC.001.2 opfyldes gennem 4× isolerede kelvin-prober med spidse tip. 
+H.MEC.001.3 opfyldes gennem køling ved naturlig konvection uden aktive elementer. 
+H.MEC.001.4 opfyldes gennem dimensioner maksimalt 100×150×50 mm.
+------------------------------------------------------------------------------------------------------------------------------
+3.4.3 EMI/EMC/ESD-beskyttelse
+PCB-layoutet implementerer alle industrielle krav til beskyttelse mod EMI, EMC og ESD som specificeret i H.PCB.001, 
+inklusive gardering, TVS-dioder, skærmede spor og korrekt grounding.
+==============================================================================================================================
+§4. Epistemiske begrænsninger
+==============================================================================================================================
+Signalintegritetsbegrænsninger (H.UNC.001): 5% præcision forudsætter optimal PCB-layout med korrekt grounding og afskærmning. 
+Afvigelser kan påvirke nøjagtigheden med op til 2%.
+
+Komponenttolerancebegrænsninger (H.UNC.002): Samlet nøjagtighed afhænger af præcisionsmodstandens tolerance (<0,1%) og 
+temperaturkoefficient (<50 ppm/°C).
+
+In-circuit påvirkningsbegrænsninger (H.UNC.003): Parallelle impedanser i testet kredsløb kan påvirke målingen. 
+Påvirkningen er ukvantificerbar uden kendskab til det specifikke kredsløb.
+==============================================================================================================================
+§5. Manglende information til konstruktion
+==============================================================================================================================
+Specifikke komponentmodeller (H.MIS.001): Opamp-modeller (MCP6004 er specificeret), potentiometertype, 
+Schottky-dioder (f.eks. til beskyttelse og ensretter), switched capacitor IC, 
+LDO-regulator kræver specifik valg baseret på tilgængelighed og performance.
+
+PCB-layout detaljer (H.MIS.002): Specifik routing, komponentplacering, guard ring design kræver detaljeret PCB-design fase.
+
+Kalibreringsudstyr (T.MIS.001): Præcise referencemodstande (0,01 Ω til 10 Ω) med dokumenteret nøjagtighed kræves for kalibrering.
+==============================================================================================================================
+§6. Praktisk anvendelse
+==============================================================================================================================
+6.1 Implementeringsfaser med kravopfyldelse
+Fase 1 (Prototype): Breadboard validering af signalkæde med fokus på H.GEN.001, H.GEN.002, H.AMP.001, H.REC.001, H.FLT.001 
+implementering med TS3V902 operationsforstærkere, inklusive test af beskyttelsesdioder.
+
+Fase 2 (PCB-design): 2-lags PCB med EMI/ESD-beskyttelse implementerer alle H.PCB.001 krav, 
+inklusive korrekt placering af de to Schottky-beskyttelsesdioder mellem filter og ADC.
+
+Fase 3 (Produktion og test): PCB-produktion og sammensætning implementerer P.PCB.001 og P.ASS.001 krav.
+------------------------------------------------------------------------------------------------------------------------------
+6.2 Risikohåndtering relateret til krav
+Signalstøjrisiko: Implementering af guarding og afskærmning på PCB adresserer H.PCB.001.4 EMI-beskyttelseskrav.
+
+Software reliability: Watchdog timer implementerer S.WDG.001 krav for systemstabilitet.
+
+Termisk drift: Karakterisering og kompensation adresserer H.UNC.002 komponenttolerancebegrænsninger.
+
+ESD og overspændingsbeskyttelse: TVS-dioder på eksterne forbindelser og Schottky-klemmere på den kritiske analoge signalkæde 
+(filter til ADC) implementerer H.PCB.001.5 ESD-beskyttelseskrav og yderligere robusthed.
+------------------------------------------------------------------------------------------------------------------------------
+6.3 Produktionsovervejelser
+Testability (P.PCB.001.4): Inkludering af testpunkter til alle kritiske signaler, herunder på begge sider af 
+beskyttelsesdioderne mellem filter og ADC.
+
+Reparabilitet: Standard komponentpakninger (SOIC, SOT-23) fremfor BGA. (Bemærk: TS3V902 anvendes i DIP14-case, dioder i SOT-23)
+
+Kalibrering: Design for nem adgang til kalibreringspotentiometer i overensstemmelse med H.GEN.002.
+==============================================================================================================================
+§7. Litteratur og reference
+==============================================================================================================================
+7.1 Referencemateriale
+Horowitz, P., & Hill, W. (2015). The Art of Electronics (3. udgave). Cambridge University Press. 
+(Operationsforstærker-kredsløb, filterdesign, strømforsyningsdesign)
+
+Williams, J. (2015). Analog Circuit Design: A Tutorial Guide to Applications and Solutions. Elsevier. 
+(Præcisionsmåleteknik, superdiode-design, lavstøjs design, indgangsbeskyttelse)
+
+Ott, H. W. (2009). Electromagnetic Compatibility Engineering. John Wiley & Sons. 
+(PCB-layout teknikker for EMI/EMC/ESD-beskyttelse)
+
+Kravspecifikation SRS-ESR-MIL-001 version 1.00 (reference for alle H-krav)
+------------------------------------------------------------------------------------------------------------------------------
+7.2 Nøglekonklusioner
+Hardwarekonstruktionen implementerer fuldt alle H-krav fra kravspecifikation SRS-ESR-MIL-001 gennem veldefinerede 
+operationsforstærker-konfigurationer med TS3V902 operationsforstærkeren.
+
+Signalkædedesignet opfylder præcisionskrav (H.PRC.001, H.PRC.002) gennem Kelvin-måling, differentiel forstærkning med TS3V902, 
+præcisionsfiltering og indbyggede Schottky-dioder til beskyttelse af ADC-indgangen mod overspændinger.
+
+PCB-designet implementerer industrielle EMI/EMC/ESD standarder (H.PCB.001) gennem 2-lags layout med korrekt grounding, 
+afskærmning og komponentplacering.
+
+Strømforsyningssystemet opfylder H.PWR.001 krav gennem stabiliseret 3,3V LDO, switched capacitor negativ forsyning til 
+TS3V902 operationsforstærkere og korrekt decoupling.
+
+Mekanisk design opfylder H.MEC.001 krav gennem kompakt kabinet med EM-afskærmning og kelvin-prober til præcise målinger.
+
+7.3 Netliste
+
+ESR-METER NETLISTE
+Hardware Version 1.00
+Kravspec: SRS-ESR-MIL-001
+
+==============================================================================================================================
+
+1. MIKROKONTROLLER: ESP32-WROOM-32 (U1)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   GPIO16     AD9850_W_CLK                   Word clock til AD9850. Output. 
+   GPIO17     AD9850_FQ_UD                   Frequency update til AD9850. Output. 
+   GPIO18     AD9850_DATA                    Serial data til AD9850. Output. 
+   GPIO19     AD9850_RESET                   Reset til AD9850. Output. 
+   GPIO21     I2C_SDA                        I2C data line. Open-drain. 4.7kΩ pull-up til 3.3V.
+   GPIO22     I2C_SCL                        I2C clock line. Open-drain. 4.7kΩ pull-up til 3.3V.
+   GPIO27     BUTTON1                        Knap 1 input. Aktiv lav. 10kΩ+100nF debounce kreds.
+   GPIO33     BUTTON2                        Knap 2 input. Aktiv lav. 10kΩ+100nF debounce kreds.
+   3.3V       +3.3V                          Strømforsyning fra LDO regulator (U9).
+   GND        DGND                           Digital ground.
+   EN         RST_NET                        Reset. 10kΩ pull-up til 3.3V, 100nF til GND.
+
+==============================================================================================================================
+
+2. DDS-GENERATOR: AD9850 (U2)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   W_CLK      AD9850_W_CLK                   Word clock input. Fra ESP32 GPIO16
+   FQ_UD      AD9850_FQ_UD                   Frequency update. Fra ESP32 GPIO17
+   DATA       AD9850_DATA                    Serial data input. Fra ESP32 GPIO18
+   RESET      AD9850_RESET                   Reset input. Fra ESP32 GPIO19
+   VCC        +5V                            Strømforsyning fra USB-C input.
+   DGND       DGND                           Digital ground.
+   AGND       AGND                           Analog ground.
+   OUT        DDS_OUT                        Analog output: 100 kHz sinus, ~0.1V p-p efter buffer.
+
+==============================================================================================================================
+
+3. UDGÅET
+
+==============================================================================================================================
+
+4. OPERATIONSFORSTÆRKERE: MCP6004  (Quad OpAmp)
+
+   KOMP.      FORBINDELSER                   FUNKTION / KOMPONENTER
+   ----------------------------------------------------------------------------
+   U3A        Pin 3: DDS_OUT                 Buffer (Voltage Follower). Input fra AD9850.
+   (Buffer)   Pin 2: BUF_OUT                 Negative feedback (direkte til pin 1).
+              Pin 1: BUF_OUT                 Output til 10µF koblingskondensator.
+              Pin 8: +3.3V, Pin 4: -5V       Forsyning. 100nF+10µF decoupling til AGND.
+              Pin 5: AGND                    Ground.
+
+   U4A        Pin 3: PROBE_HI_MEAS via R1    Differentialforstærker. R1=1kΩ ±0.1% til pin 3.
+   (Diff Amp) Pin 2: PROBE_LO_MEAS via R3    R3=1kΩ ±0.1% til pin 2, R2=47kΩ ±0.1% feedback til pin 1.
+              Pin 1: DIFF_OUT                Output. R2=47kΩ til pin 2, R4=47kΩ ±0.1% fra pin 3 til AGND.
+              Pin 8: +3.3V, Pin 4: -5V       Forsyning. Decoupling.
+              Pin 5: AGND                    Ground.
+
+   U5A, U5B   U5A Pin 3: AGND                Superdiode-ensretter. U5A: Halvbølge. U5B: Fuldbølge.
+   (Super-    U5A Pin 2: RECT_IN via R5      R5=10kΩ ±1% fra DIFF_OUT. D1=1N5817 fra pin 1 til pin 2.
+    diode)    U5A Pin 1: RECT_HALF           Til D2 anode. D2=1N5817 til R6. R6=10kΩ ±1% til U5B pin 6.
+              U5B Pin 5: AGND via R8         R8=10kΩ ±1%.
+              U5B Pin 6: RECT_HALF_FILT      Input fra R6. R7=10kΩ ±1% feedback fra pin 7.
+              U5B Pin 7: RECT_OUT            Output til filter.
+              Forsyning: +3.3V, -5V          Decoupling.
+              Ground: AGND
+
+   U6A        Pin 3: FILTER_IN via R9        Sallen-Key lavpasfilter (3. orden). R9=1.59kΩ ±1%. C1=1µF film.
+   (Filter)   Pin 2: FILTER_OUT              Negative feedback (direkte til pin 1).
+              Pin 1: FILTER_OUT              Output til ADC og beskyttelsesdioder.
+              R10=1.59kΩ ±1% til AGND        C2=100nF film, C3=10nF film fra FILTER_IN til AGND.
+              Forsyning: +3.3V, -5V          Decoupling.
+              Ground: AGND
+
+==============================================================================================================================
+
+5. ADC: ADS1115 (U7)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VDD        +3.3V                          Strømforsyning. 100nF decoupling til AGND.
+   GND        AGND                           Analog ground.
+   SDA        I2C_SDA                        I2C data line. 4.7kΩ pull-up til 3.3V.
+   SCL        I2C_SCL                        I2C clock line. 4.7kΩ pull-up til 3.3V.
+   A0         ADC_IN                         Analog input. Fra FILTER_OUT via beskyttelsesdioder D3, D4.
+   A1,A2,A3   AGND                           Ubenyttede inputs. Jordet for støjreduktion.
+   ADDR       AGND                           I2C adresse sat til 0x48 (GND).
+   ALRT       -                              Ikke brugt.
+
+==============================================================================================================================
+
+6. BESKYTTELSESDIODER FOR ADC INPUT
+
+   DIODE      FORBINDELSER                   FUNKTION
+   ----------------------------------------------------------------------------
+   D3         Anode: FILTER_OUT              Schottky diode (BAT54). Klemmer signalet til +3.3V for overspænding.
+   (BAT54)    Katode: +3.3V
+   D4         Anode: AGND                    Schottky diode (BAT54). Klemmer signalet til AGND for underspænding.
+   (BAT54)    Katode: FILTER_OUT
+   R11        Fra FILTER_OUT til ADC_IN      Valgfri seriemodstand (100Ω ±5%) for strømbegrænsning.
+
+==============================================================================================================================
+
+7. LCD DISPLAY 16x2 I2C (U8)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VCC        +3.3V                          Strømforsyning. 100nF decoupling.
+   GND        DGND                           Ground.
+   SDA        I2C_SDA                        I2C data line. Delt med ADS1115.
+   SCL        I2C_SCL                        I2C clock line. Delt med ADS1115.
+   LED+       +3.3V                          Backlight power. Via 10Ω seriemodstand (valgfri).
+   LED-       DGND                           Backlight ground.
+
+==============================================================================================================================
+
+8. KNAPPER
+
+   KNAP       FORBINDELSER                   KOMPONENTER / NOTER
+   ----------------------------------------------------------------------------
+   SW1        Side 1: GPIO27                 Knap 1 - Display mode skift. Aktiv lav.
+   (BUTTON1)  Side 2: DGND                   Intern 10kΩ pull-up i ESP32. Ekstern 10kΩ + 100nF RC debounce.
+   SW2        Side 1: GPIO33                 Knap 2 - Communication mode skift. Aktiv lav.
+   (BUTTON2)  Side 2: DGND                   Intern 10kΩ pull-up i ESP32. Ekstern 10kΩ + 100nF RC debounce.
+
+==============================================================================================================================
+
+9. STRØMFORSYNING
+
+   KOMP.      FORBINDELSER                   FUNKTION / KOMPONENTER
+   ----------------------------------------------------------------------------
+   USB-C      VCC: +5V_RAW                   5V input. 10µF elektrolyt + 100nF keramisk decoupling.
+   (J1)       GND: DGND                      Ground. CC1,CC2: 5.1kΩ pull-down hver til GND.
+
+   LDO        IN: +5V_RAW                    AMS1117-3.3. Input: 10µF tantal + 100nF keramisk.
+   (U9)       OUT: +3.3V                     Output: 22µF tantal + 100nF keramisk.
+              GND: DGND
+
+   Negativ    V+: +5V_RAW                    ICL7660. Input: 10µF tantal. OSC: åben for 10kHz.
+   Fors.      VOUT: -5V                      Output: 10µF tantal.
+   (U10)      GND: DGND                      CAP+, CAP-: 10µF flying capacitor.
+
+==============================================================================================================================
+
+10. MÅLEKREDS OG KELVIN-FORBINDELSER
+
+   KOMP.      FORBINDELSER                   FUNKTION
+   ----------------------------------------------------------------------------
+   C_couple   BUF_OUT → PROBE_HI_FORCE       10µF lav-ESR elektrolyt. AC-kobling til DUT.
+   R_series   PROBE_HI_FORCE → PROBE_LO_FORCE 10Ω ±0.1% præcisionsmodstand. Referenceserie-modstand.
+   Kelvin-    1. PROBE_HI_FORCE → DUT+       Fire-leder (Kelvin) forbindelser:
+   forbind.   2. PROBE_HI_MEAS → DUT+        1. Force High. 2. Sense High.
+              3. PROBE_LO_FORCE → DUT-       3. Force Low. 4. Sense Low.
+              4. PROBE_LO_MEAS → DUT-        (Separate ledere for hver).
+
+==============================================================================================================================
+
+11. GROUNDING SYSTEM
+
+   GROUND     FORBINDELSER                   NOTER
+   ----------------------------------------------------------------------------
+   AGND       Alle analoge komponenter:      Operationsforstærkere (GND pins), ADC GND, filter komponenter til GND.
+              OpAmps, ADC, filter caps.
+   DGND       ESP32 GND, LCD GND, knapper,   Digital ground.
+              digital IC GND, USB GND.
+   Forbindelse AGND og DGND forbindes ved    Enkelt forbindelsespunkt med 0Ω modstand eller ferritperle.
+              et enkelt punkt.
+
+==============================================================================================================================
+
+12. KOMPONENT OVERSIGT
+
+   KOMPONENT  VÆRDI/TYPE                     ANTAL   PLACERING / NOTER
+   ----------------------------------------------------------------------------
+   ESP32      WROOM-32                       1       U1
+   AD9850     DDS Generator                  1       U2
+   MCP6004    Quad OpAmp (DIP14)             4       U3, U4
+   ADS1115    16-bit ADC                     1       U7
+   16x2 LCD   I2C Display                    1       U8
+   AMS1117-3.3 LDO Regulator                 1       U9
+   ICL7660    Negativ spændingskonverter     1       U10
+   1N5817     Schottky diode                 2       D1, D2
+   BAT54      Schottky diode (dobbelt)       1       D3 (to dioder)
+   10µF       Tantal kondensator             6       Decoupling ved IC'er
+   22µF       Tantal kondensator             1       LDO output
+   100nF      Keramisk kondensator           12      Decoupling
+   1µF        Film kondensator               1       C1 i filter
+   100nF      Film kondensator               1       C2 i filter
+   10nF       Film kondensator               1       C3 i filter
+   10µF       Elektrolyt kondensator         1       C_couple (AC-kobling)
+   10Ω        Præcisionsmodstand ±0.1%       1       R_series (referenceserie)
+   1kΩ        Præcisionsmodstand ±0.1%       2       R1, R3 i diff. forstærker
+   47kΩ       Præcisionsmodstand ±0.1%       2       R2, R4 i diff. forstærker
+   10kΩ       Modstand ±1%                   4       R5, R6, R7, R8 i superdiode
+   1.59kΩ     Modstand ±1%                   2       R9, R10 i filter
+   100Ω       Modstand ±5%                   1       R11 (valgfri seriemodstand til ADC)
+   4.7kΩ      Modstand ±5%                   2       I2C pull-up
+   10kΩ       Modstand ±5%                   2       Knap debounce
+   5.1kΩ      Modstand ±5%                   2       USB-C CC pull-down
+   Tactile    6x6 mm switch                  2       SW1, SW2
+   USB-C      16-pin SMD connector           1       J1
+   Shifter
+   4-pol      Gulvstående socket             1       Kelvin probeforbindelse
+   Socket
+
+==============================================================================================================================
+
+13. TESTPUNKTER (TP)
+
+   TP         NET                            FORMÅL
+   ----------------------------------------------------------------------------
+   TP1        DDS_OUT                        AD9850 output verifikation
+   TP2        BUF_OUT                        Buffer output verifikation
+   TP3        PROBE_HI_MEAS                  High sense måling
+   TP4        PROBE_LO_MEAS                  Low sense måling
+   TP5        DIFF_OUT                       Differentialforstærker output
+   TP6        RECT_OUT                       Ensretter output
+   TP7        FILTER_OUT                     Filter output til ADC (før beskyttelsesdioder)
+   TP8        +3.3V                          3.3V rail test
+   TP9        -5V                           -5V rail test
+   TP10       AGND                           Analog ground test
+   TP11       DGND                           Digital ground test
+
+==============================================================================================================================
+
+14. DESIGNNOTER
+
+   • PCB Layout: 2-lags design med komplet masseplan på begge sider.
+   • Separering: Analog og digital sektion adskilt med minimum 5 mm.
+   • Gardering: Kritiske analoge spor garderet med AGND.
+   • ESD Beskyttelse: TVS-dioder på alle eksterne forbindelser (probeforbindelser, USB).
+   • Decoupling: 100nF keramisk + 10µF tantal ved hver IC strømforsyning.
+   • Strømforbrug: USB-C understøtter op til 500mA. Systemforbrug ~280mA typisk.
+   • Firmware: Baseret på kravspecifikation SRS-ESR-MIL-001, dokument SW-ESR-MIL-002.
