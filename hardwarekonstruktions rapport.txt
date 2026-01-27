@@ -92,8 +92,7 @@ Denne implementering sikrer nødvendig opløsning for 1 mΩ måling ved 10 Ω fu
 3.3 Strømforsyningsdesign med kravreferencer
 3.3.1 Positive forsyninger (H.PWR.001.1, H.PWR.001.2, H.PWR.001.4)
 H.PWR.001.1 opfyldes gennem USB-C input med 5V @ 500 mA minimum. H.PWR.001.2 opfyldes gennem 3,3V LDO regulator til ESP32, 
-operationsforstærkere TS3V902 og ADS1115. H.PWR.001.4 opfyldes gennem bidirektionel levelkonverter mellem 3,3V logik 
-og 5V AD9850 kommunikation.
+operationsforstærkere TS3V902 og ADS1115. 
 ------------------------------------------------------------------------------------------------------------------------------
 3.3.2 Negativ forsyning (H.PWR.001.3)
 H.PWR.001.3 opfyldes gennem switched capacitor konverter (ICL7660 eller tilsvarende) der genererer -5V til 
@@ -215,10 +214,10 @@ Kravspec: SRS-ESR-MIL-001
 
    PIN        NET/FORBINDELSE                FUNKTION / NOTER
    ----------------------------------------------------------------------------
-   GPIO16     AD9850_W_CLK                   Word clock til AD9850. Output. 3.3V→5V level shifter.
-   GPIO17     AD9850_FQ_UD                   Frequency update til AD9850. Output. 3.3V→5V level shifter.
-   GPIO18     AD9850_DATA                    Serial data til AD9850. Output. 3.3V→5V level shifter.
-   GPIO19     AD9850_RESET                   Reset til AD9850. Output. 3.3V→5V level shifter.
+   GPIO16     AD9850_W_CLK                   Word clock til AD9850. Output. 
+   GPIO17     AD9850_FQ_UD                   Frequency update til AD9850. Output. 
+   GPIO18     AD9850_DATA                    Serial data til AD9850. Output. 
+   GPIO19     AD9850_RESET                   Reset til AD9850. Output. 
    GPIO21     I2C_SDA                        I2C data line. Open-drain. 4.7kΩ pull-up til 3.3V.
    GPIO22     I2C_SCL                        I2C clock line. Open-drain. 4.7kΩ pull-up til 3.3V.
    GPIO27     BUTTON1                        Knap 1 input. Aktiv lav. 10kΩ+100nF debounce kreds.
@@ -233,10 +232,10 @@ Kravspec: SRS-ESR-MIL-001
 
    PIN        NET/FORBINDELSE                FUNKTION / NOTER
    ----------------------------------------------------------------------------
-   W_CLK      AD9850_W_CLK                   Word clock input. Fra ESP32 GPIO16 via level shifter.
-   FQ_UD      AD9850_FQ_UD                   Frequency update. Fra ESP32 GPIO17 via level shifter.
-   DATA       AD9850_DATA                    Serial data input. Fra ESP32 GPIO18 via level shifter.
-   RESET      AD9850_RESET                   Reset input. Fra ESP32 GPIO19 via level shifter.
+   W_CLK      AD9850_W_CLK                   Word clock input. Fra ESP32 GPIO16
+   FQ_UD      AD9850_FQ_UD                   Frequency update. Fra ESP32 GPIO17
+   DATA       AD9850_DATA                    Serial data input. Fra ESP32 GPIO18
+   RESET      AD9850_RESET                   Reset input. Fra ESP32 GPIO19
    VCC        +5V                            Strømforsyning fra USB-C input.
    DGND       DGND                           Digital ground.
    AGND       AGND                           Analog ground.
@@ -244,21 +243,7 @@ Kravspec: SRS-ESR-MIL-001
 
 ==============================================================================================================================
 
-3. LEVEL SHIFTER (3.3V ↔ 5V) - F.eks. TXB0104
-
-   SIDE       NET/FORBINDELSE                FUNKTION / NOTER
-   ----------------------------------------------------------------------------
-   3.3V A     GPIO16                         Forbinder til ESP32 GPIO16.
-   5V B       AD9850_W_CLK                   Forbinder til AD9850 W_CLK.
-   3.3V A     GPIO17                         Forbinder til ESP32 GPIO17.
-   5V B       AD9850_FQ_UD                   Forbinder til AD9850 FQ_UD.
-   3.3V A     GPIO18                         Forbinder til ESP32 GPIO18.
-   5V B       AD9850_DATA                    Forbinder til AD9850 DATA.
-   3.3V A     GPIO19                         Forbinder til ESP32 GPIO19.
-   5V B       AD9850_RESET                   Forbinder til AD9850 RESET.
-   VCCA       +3.3V                          Strømforsyning 3.3V side.
-   VCCB       +5V                            Strømforsyning 5V side.
-   GND        DGND                           Ground.
+3. UDGÅET
 
 ==============================================================================================================================
 
@@ -421,7 +406,6 @@ Kravspec: SRS-ESR-MIL-001
    5.1kΩ      Modstand ±5%                   2       USB-C CC pull-down
    Tactile    6x6 mm switch                  2       SW1, SW2
    USB-C      16-pin SMD connector           1       J1
-   Level      TXB0104 eller tilsvarende      1       -
    Shifter
    4-pol      Gulvstående socket             1       Kelvin probeforbindelse
    Socket

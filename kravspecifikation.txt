@@ -153,7 +153,7 @@ H.PWR.001.2: Hovedregulator: 3,3V LDO @ 300 mA (ESP32, opamps, ADS1115)
 H.PWR.001.3: Negativ forsyning: Switched capacitor konverter 
 (ICL7660 eller tilsvarende) genererer -5V til opamps
 
-H.PWR.001.4: Levelkonverter: Bidirektionel 3,3V↔5V til AD9850 kommunikation
+H.PWR.001.4: Levelkonverter: Valgt fra da AD9850 fint kan køre 3,3V
 
 H.PWR.001.5: Decoupling: 100 nF keramisk + 10 µF tantal ved hver IC
 

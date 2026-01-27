@@ -1,0 +1,234 @@
+ESR-METER NETLISTE
+Hardware Version 1.00
+Kravspec: SRS-ESR-MIL-001
+
+==============================================================================================================================
+
+1. MIKROKONTROLLER: ESP32-WROOM-32 (U1)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   GPIO16     AD9850_W_CLK                   Word clock til AD9850. Output. 
+   GPIO17     AD9850_FQ_UD                   Frequency update til AD9850. Output. 
+   GPIO18     AD9850_DATA                    Serial data til AD9850. Output. 
+   GPIO19     AD9850_RESET                   Reset til AD9850. Output. 
+   GPIO21     I2C_SDA                        I2C data line. Open-drain. 4.7kΩ pull-up til 3.3V.
+   GPIO22     I2C_SCL                        I2C clock line. Open-drain. 4.7kΩ pull-up til 3.3V.
+   GPIO27     BUTTON1                        Knap 1 input. Aktiv lav. 10kΩ+100nF debounce kreds.
+   GPIO33     BUTTON2                        Knap 2 input. Aktiv lav. 10kΩ+100nF debounce kreds.
+   3.3V       +3.3V                          Strømforsyning fra LDO regulator (U9).
+   GND        DGND                           Digital ground.
+   EN         RST_NET                        Reset. 10kΩ pull-up til 3.3V, 100nF til GND.
+
+==============================================================================================================================
+
+2. DDS-GENERATOR: AD9850 (U2)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   W_CLK      AD9850_W_CLK                   Word clock input. Fra ESP32 GPIO16 via level shifter.
+   FQ_UD      AD9850_FQ_UD                   Frequency update. Fra ESP32 GPIO17 via level shifter.
+   DATA       AD9850_DATA                    Serial data input. Fra ESP32 GPIO18 via level shifter.
+   RESET      AD9850_RESET                   Reset input. Fra ESP32 GPIO19 via level shifter.
+   VCC        +5V                            Strømforsyning fra USB-C input.
+   DGND       DGND                           Digital ground.
+   AGND       AGND                           Analog ground.
+   OUT        DDS_OUT                        Analog output: 100 kHz sinus, ~0.1V p-p efter buffer.
+
+==============================================================================================================================
+
+3. UDGÅET
+
+==============================================================================================================================
+
+4. OPERATIONSFORSTÆRKERE: TS3V902 (Dual OpAmp)
+
+   KOMP.      FORBINDELSER                   FUNKTION / KOMPONENTER
+   ----------------------------------------------------------------------------
+   U3A        Pin 3: DDS_OUT                 Buffer (Voltage Follower). Input fra AD9850.
+   (Buffer)   Pin 2: BUF_OUT                 Negative feedback (direkte til pin 1).
+              Pin 1: BUF_OUT                 Output til 10µF koblingskondensator.
+              Pin 8: +3.3V, Pin 4: -5V       Forsyning. 100nF+10µF decoupling til AGND.
+              Pin 5: AGND                    Ground.
+
+   U4A        Pin 3: PROBE_HI_MEAS via R1    Differentialforstærker. R1=1kΩ ±0.1% til pin 3.
+   (Diff Amp) Pin 2: PROBE_LO_MEAS via R3    R3=1kΩ ±0.1% til pin 2, R2=47kΩ ±0.1% feedback til pin 1.
+              Pin 1: DIFF_OUT                Output. R2=47kΩ til pin 2, R4=47kΩ ±0.1% fra pin 3 til AGND.
+              Pin 8: +3.3V, Pin 4: -5V       Forsyning. Decoupling.
+              Pin 5: AGND                    Ground.
+
+   U5A, U5B   U5A Pin 3: AGND                Superdiode-ensretter. U5A: Halvbølge. U5B: Fuldbølge.
+   (Super-    U5A Pin 2: RECT_IN via R5      R5=10kΩ ±1% fra DIFF_OUT. D1=1N5817 fra pin 1 til pin 2.
+    diode)    U5A Pin 1: RECT_HALF           Til D2 anode. D2=1N5817 til R6. R6=10kΩ ±1% til U5B pin 6.
+              U5B Pin 5: AGND via R8         R8=10kΩ ±1%.
+              U5B Pin 6: RECT_HALF_FILT      Input fra R6. R7=10kΩ ±1% feedback fra pin 7.
+              U5B Pin 7: RECT_OUT            Output til filter.
+              Forsyning: +3.3V, -5V          Decoupling.
+              Ground: AGND
+
+   U6A        Pin 3: FILTER_IN via R9        Sallen-Key lavpasfilter (3. orden). R9=1.59kΩ ±1%. C1=1µF film.
+   (Filter)   Pin 2: FILTER_OUT              Negative feedback (direkte til pin 1).
+              Pin 1: FILTER_OUT              Output til ADC og beskyttelsesdioder.
+              R10=1.59kΩ ±1% til AGND        C2=100nF film, C3=10nF film fra FILTER_IN til AGND.
+              Forsyning: +3.3V, -5V          Decoupling.
+              Ground: AGND
+
+==============================================================================================================================
+
+5. ADC: ADS1115 (U7)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VDD        +3.3V                          Strømforsyning. 100nF decoupling til AGND.
+   GND        AGND                           Analog ground.
+   SDA        I2C_SDA                        I2C data line. 4.7kΩ pull-up til 3.3V.
+   SCL        I2C_SCL                        I2C clock line. 4.7kΩ pull-up til 3.3V.
+   A0         ADC_IN                         Analog input. Fra FILTER_OUT via beskyttelsesdioder D3, D4.
+   A1,A2,A3   AGND                           Ubenyttede inputs. Jordet for støjreduktion.
+   ADDR       AGND                           I2C adresse sat til 0x48 (GND).
+   ALRT       -                              Ikke brugt.
+
+==============================================================================================================================
+
+6. BESKYTTELSESDIODER FOR ADC INPUT
+
+   DIODE      FORBINDELSER                   FUNKTION
+   ----------------------------------------------------------------------------
+   D3         Anode: FILTER_OUT              Schottky diode (BAT54). Klemmer signalet til +3.3V for overspænding.
+   (BAT54)    Katode: +3.3V
+   D4         Anode: AGND                    Schottky diode (BAT54). Klemmer signalet til AGND for underspænding.
+   (BAT54)    Katode: FILTER_OUT
+   R11        Fra FILTER_OUT til ADC_IN      Valgfri seriemodstand (100Ω ±5%) for strømbegrænsning.
+
+==============================================================================================================================
+
+7. LCD DISPLAY 16x2 I2C (U8)
+
+   PIN        NET/FORBINDELSE                FUNKTION / NOTER
+   ----------------------------------------------------------------------------
+   VCC        +3.3V                          Strømforsyning. 100nF decoupling.
+   GND        DGND                           Ground.
+   SDA        I2C_SDA                        I2C data line. Delt med ADS1115.
+   SCL        I2C_SCL                        I2C clock line. Delt med ADS1115.
+   LED+       +3.3V                          Backlight power. Via 10Ω seriemodstand (valgfri).
+   LED-       DGND                           Backlight ground.
+
+==============================================================================================================================
+
+8. KNAPPER
+
+   KNAP       FORBINDELSER                   KOMPONENTER / NOTER
+   ----------------------------------------------------------------------------
+   SW1        Side 1: GPIO27                 Knap 1 - Display mode skift. Aktiv lav.
+   (BUTTON1)  Side 2: DGND                   Intern 10kΩ pull-up i ESP32. Ekstern 10kΩ + 100nF RC debounce.
+   SW2        Side 1: GPIO33                 Knap 2 - Communication mode skift. Aktiv lav.
+   (BUTTON2)  Side 2: DGND                   Intern 10kΩ pull-up i ESP32. Ekstern 10kΩ + 100nF RC debounce.
+
+==============================================================================================================================
+
+9. STRØMFORSYNING
+
+   KOMP.      FORBINDELSER                   FUNKTION / KOMPONENTER
+   ----------------------------------------------------------------------------
+   USB-C      VCC: +5V_RAW                   5V input. 10µF elektrolyt + 100nF keramisk decoupling.
+   (J1)       GND: DGND                      Ground. CC1,CC2: 5.1kΩ pull-down hver til GND.
+
+   LDO        IN: +5V_RAW                    AMS1117-3.3. Input: 10µF tantal + 100nF keramisk.
+   (U9)       OUT: +3.3V                     Output: 22µF tantal + 100nF keramisk.
+              GND: DGND
+
+   Negativ    V+: +5V_RAW                    ICL7660. Input: 10µF tantal. OSC: åben for 10kHz.
+   Fors.      VOUT: -5V                      Output: 10µF tantal.
+   (U10)      GND: DGND                      CAP+, CAP-: 10µF flying capacitor.
+
+==============================================================================================================================
+
+10. MÅLEKREDS OG KELVIN-FORBINDELSER
+
+   KOMP.      FORBINDELSER                   FUNKTION
+   ----------------------------------------------------------------------------
+   C_couple   BUF_OUT → PROBE_HI_FORCE       10µF lav-ESR elektrolyt. AC-kobling til DUT.
+   R_series   PROBE_HI_FORCE → PROBE_LO_FORCE 10Ω ±0.1% præcisionsmodstand. Referenceserie-modstand.
+   Kelvin-    1. PROBE_HI_FORCE → DUT+       Fire-leder (Kelvin) forbindelser:
+   forbind.   2. PROBE_HI_MEAS → DUT+        1. Force High. 2. Sense High.
+              3. PROBE_LO_FORCE → DUT-       3. Force Low. 4. Sense Low.
+              4. PROBE_LO_MEAS → DUT-        (Separate ledere for hver).
+
+==============================================================================================================================
+
+11. GROUNDING SYSTEM
+
+   GROUND     FORBINDELSER                   NOTER
+   ----------------------------------------------------------------------------
+   AGND       Alle analoge komponenter:      Operationsforstærkere (GND pins), ADC GND, filter komponenter til GND.
+              OpAmps, ADC, filter caps.
+   DGND       ESP32 GND, LCD GND, knapper,   Digital ground.
+              digital IC GND, USB GND.
+   Forbindelse AGND og DGND forbindes ved    Enkelt forbindelsespunkt med 0Ω modstand eller ferritperle.
+              et enkelt punkt.
+
+==============================================================================================================================
+
+12. KOMPONENT OVERSIGT
+
+   KOMPONENT  VÆRDI/TYPE                     ANTAL   PLACERING / NOTER
+   ----------------------------------------------------------------------------
+   ESP32      WROOM-32                       1       U1
+   AD9850     DDS Generator                  1       U2
+   TS3V902    Dual OpAmp (DIP14)             4       U3, U4, U5, U6
+   ADS1115    16-bit ADC                     1       U7
+   16x2 LCD   I2C Display                    1       U8
+   AMS1117-3.3 LDO Regulator                 1       U9
+   ICL7660    Negativ spændingskonverter     1       U10
+   1N5817     Schottky diode                 2       D1, D2
+   BAT54      Schottky diode (dobbelt)       1       D3 (to dioder)
+   10µF       Tantal kondensator             6       Decoupling ved IC'er
+   22µF       Tantal kondensator             1       LDO output
+   100nF      Keramisk kondensator           12      Decoupling
+   1µF        Film kondensator               1       C1 i filter
+   100nF      Film kondensator               1       C2 i filter
+   10nF       Film kondensator               1       C3 i filter
+   10µF       Elektrolyt kondensator         1       C_couple (AC-kobling)
+   10Ω        Præcisionsmodstand ±0.1%       1       R_series (referenceserie)
+   1kΩ        Præcisionsmodstand ±0.1%       2       R1, R3 i diff. forstærker
+   47kΩ       Præcisionsmodstand ±0.1%       2       R2, R4 i diff. forstærker
+   10kΩ       Modstand ±1%                   4       R5, R6, R7, R8 i superdiode
+   1.59kΩ     Modstand ±1%                   2       R9, R10 i filter
+   100Ω       Modstand ±5%                   1       R11 (valgfri seriemodstand til ADC)
+   4.7kΩ      Modstand ±5%                   2       I2C pull-up
+   10kΩ       Modstand ±5%                   2       Knap debounce
+   5.1kΩ      Modstand ±5%                   2       USB-C CC pull-down
+   Tactile    6x6 mm switch                  2       SW1, SW2
+   USB-C      16-pin SMD connector           1       J1
+   4-pol      Gulvstående socket             1       Kelvin probeforbindelse
+   Socket
+
+==============================================================================================================================
+
+13. TESTPUNKTER (TP)
+
+   TP         NET                            FORMÅL
+   ----------------------------------------------------------------------------
+   TP1        DDS_OUT                        AD9850 output verifikation
+   TP2        BUF_OUT                        Buffer output verifikation
+   TP3        PROBE_HI_MEAS                  High sense måling
+   TP4        PROBE_LO_MEAS                  Low sense måling
+   TP5        DIFF_OUT                       Differentialforstærker output
+   TP6        RECT_OUT                       Ensretter output
+   TP7        FILTER_OUT                     Filter output til ADC (før beskyttelsesdioder)
+   TP8        +3.3V                          3.3V rail test
+   TP9        -5V                           -5V rail test
+   TP10       AGND                           Analog ground test
+   TP11       DGND                           Digital ground test
+
+==============================================================================================================================
+
+14. DESIGNNOTER
+
+   • PCB Layout: 2-lags design med komplet masseplan på begge sider.
+   • Separering: Analog og digital sektion adskilt med minimum 5 mm.
+   • Gardering: Kritiske analoge spor garderet med AGND.
+   • ESD Beskyttelse: TVS-dioder på alle eksterne forbindelser (probeforbindelser, USB).
+   • Decoupling: 100nF keramisk + 10µF tantal ved hver IC strømforsyning.
+   • Strømforbrug: USB-C understøtter op til 500mA. Systemforbrug ~280mA typisk.
+   • Firmware: Baseret på kravspecifikation SRS-ESR-MIL-001, dokument SW-ESR-MIL-002.
