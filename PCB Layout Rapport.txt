@@ -69,7 +69,6 @@ Zone A: Analog sektion (venstre side af PCB)
 
 Zone B: Digital sektion (højre side af PCB)
 • Mikrokontroller (U1)
-• Level shifter
 • I2C pull-up modstande
 • Knapper (SW1, SW2)
 • USB-C connector (J1)
