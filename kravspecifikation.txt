@@ -84,7 +84,19 @@ Maksimal udgang: 0,1V p-p ved testprobene
 H.CPL.001: AC-kobling og spændingsdeler
 Koblingskondensator: 10 µF lav-ESR, 50V minimum
 
-Præcisionsmodstand: 10 Ω ±0,1%, <50 ppm/°C
+Præcisionsmodstand: Præcisionsmodstand: 10 Ω ±0,1%, temperaturkoefficient <25 ppm/°C (foretrukken) eller <50 ppm/°C (minimum).
+Bemærk: Den absolutte tolerance på ±0,1% er mindre kritisk, da systemet kalibreres i software. 
+Derimod er en lav temperaturkoefficient (TC) afgørende for at minimere drift under måling. 
+Modstanden skal være af en type med høj temperaturstabilitet, f.eks. metal-foil- eller tyndfilmsmodstand med lav TC.
+
+Vishay S102C serie (Bulk Metal® Foil) – TC typisk <5 ppm/°C, tolerance fra ±0,1%.
+
+Bourns PWR247T-10 (tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
+
+Yageo RTxx (præcisions tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
+
+Ved at vælge en modstand med TC <25 ppm/°C (eller lavere) sikres, at modstandsvariationen over det angivne temperaturinterval (15–25°C) 
+holdes under 0,025%, hvilket er ubetydeligt i forhold til systemets samlede nøjagtighed på ≤5%.
 
 Kelvin-tilslutning: Fire separate ledere til DUT
 

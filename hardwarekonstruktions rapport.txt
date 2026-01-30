@@ -61,8 +61,11 @@ Trin 3: Potentiometer justerer amplitude til 0,1V p-p (H.GEN.002)
 KONKLUSION: Signalkæde sikrer stabilt testsignal under sikkerhedsgrænse (H.LIM.002)
 ------------------------------------------------------------------------------------------------------------------------------
 3.2.2 Målekreds og Kelvin-forbindelser (H.CPL.001)
-H.CPL.001 opfyldes gennem 10 µF lav-ESR koblingskondensator med 10 Ω præcisionsmodstand (±0,1%, <50 ppm/°C) og fire separate 
-ledere til DUT i Kelvin-konfiguration. Denne implementering sikrer korrekt AC-kobling og eliminering af ledningsmodstand.
+H.CPL.001 opfyldes gennem 10 µF lav-ESR koblingskondensator med 10 Ω præcisionsmodstand (±0,1%, <50 ppm/°C)
+Præcisionsmodstand (R_series): 10 Ω ±0,1%, temperaturkoefficient <25 ppm/°C (foretrukken) eller <50 ppm/°C (minimum).
+Bemærk: Den absolutte tolerance er mindre kritisk da systemet kalibreres i software. 
+Derimod er en lav temperaturkoefficient (TC) afgørende for at minimere drift under måling. 
+Modstanden skal være af en type med høj temperaturstabilitet, f.eks. metal-foil- eller tyndfilmsmodstand med lav TC.
 ------------------------------------------------------------------------------------------------------------------------------
 3.2.3 Differentialforstærker (H.AMP.001)
 H.AMP.001 opfyldes gennem differentialforstærker implementeret med én operationsforstærker MCP6004 i differentiel 
@@ -354,11 +357,26 @@ Kravspec: SRS-ESR-MIL-001
    KOMP.      FORBINDELSER                   FUNKTION
    ----------------------------------------------------------------------------
    C_couple   BUF_OUT → PROBE_HI_FORCE       10µF lav-ESR elektrolyt. AC-kobling til DUT.
-   R_series   PROBE_HI_FORCE → PROBE_LO_FORCE 10Ω ±0.1% præcisionsmodstand. Referenceserie-modstand.
+   R_series   PROBE_HI_FORCE → PROBE_LO_FORCE 10Ω * præcisionsmodstand. Referenceserie-modstand.
    Kelvin-    1. PROBE_HI_FORCE → DUT+       Fire-leder (Kelvin) forbindelser:
    forbind.   2. PROBE_HI_MEAS → DUT+        1. Force High. 2. Sense High.
               3. PROBE_LO_FORCE → DUT-       3. Force Low. 4. Sense Low.
               4. PROBE_LO_MEAS → DUT-        (Separate ledere for hver).
+
+*: Præcisionsmodstand (R_series): 10 Ω ±0,1%, temperaturkoefficient <25 ppm/°C (foretrukken) eller <50 ppm/°C (minimum).
+Bemærk: Den absolutte tolerance er mindre kritisk da systemet kalibreres i software. 
+Derimod er en lav temperaturkoefficient (TC) afgørende for at minimere drift under måling. 
+Modstanden skal være af en type med høj temperaturstabilitet, f.eks. metal-foil- eller tyndfilmsmodstand med lav TC.
+Konkret modstandstype med disse egenskaber (eksempel):
+
+Vishay S102C serie (Bulk Metal® Foil) – TC typisk <5 ppm/°C, tolerance ±0,1%.
+
+Bourns PWR247T-10 (tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
+
+Yageo RTxx (præcisions tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
+Ved at vælge en modstand med TC <25 ppm/°C (eller lavere) sikres, at modstandsvariationen over det angivne 
+temperaturinterval (15–25°C) holdes under 0,025%, hvilket er ubetydeligt i forhold til systemets samlede nøjagtighed på ≤5%.
+
 
 ==============================================================================================================================
 
@@ -395,7 +413,7 @@ Kravspec: SRS-ESR-MIL-001
    100nF      Film kondensator               1       C2 i filter
    10nF       Film kondensator               1       C3 i filter
    10µF       Elektrolyt kondensator         1       C_couple (AC-kobling)
-   10Ω        Præcisionsmodstand ±0.1%       1       R_series (referenceserie)
+   10Ω        Præcisionsmodstand ±0.1%       1       R_series (referenceserie) **
    1kΩ        Præcisionsmodstand ±0.1%       2       R1, R3 i diff. forstærker
    47kΩ       Præcisionsmodstand ±0.1%       2       R2, R4 i diff. forstærker
    10kΩ       Modstand ±1%                   4       R5, R6, R7, R8 i superdiode
@@ -409,6 +427,13 @@ Kravspec: SRS-ESR-MIL-001
    Shifter
    4-pol      Gulvstående socket             1       Kelvin probeforbindelse
    Socket
+Konkret modstandstype med disse egenskaber (eksempel):
+
+Vishay S102C serie (Bulk Metal® Foil) – TC typisk <5 ppm/°C, tolerance ±0,1%.
+
+Bourns PWR247T-10 (tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
+
+Yageo RTxx (præcisions tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
 
 ==============================================================================================================================
 
