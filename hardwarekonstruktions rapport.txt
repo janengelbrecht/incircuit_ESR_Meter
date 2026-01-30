@@ -15,9 +15,9 @@ Denne rapport specificerer hardwarekonstruktionen til et in-circuit ESR-meter ba
 Systemet implementerer 100 kHz sinustest med 0,1V amplitude (H.SIG.001) for sikker in-circuit måling af ESR i området 
 0-10 Ω (H.ESR.001) med 1 mΩ opløsning (H.PRC.001) og 5% præcision (H.PRC.002). 
 Konstruktionen implementerer bufferstadium med operationsforstærkeren 
-TS3V902 (3V rail-to-rail CMOS dual operational amplifier i DIP14-case) (H.GEN.002),
- differentialforstærker med én operationsforstærker TS3V902 (H.AMP.001), superdiode-ensretter med to operationsforstærkere 
-TS3V902 (H.REC.001), tredjeordens Sallen-Key Butterworth-filter med operationsforstærkeren TS3V902 (H.FLT.001) og 
+MCP6004 (3V rail-to-rail CMOS dual operational amplifier i DIP14-case) (H.GEN.002),
+ differentialforstærker med én operationsforstærker MCP6004 (H.AMP.001), superdiode-ensretter med to operationsforstærkere 
+MCP6004 (H.REC.001), tredjeordens Sallen-Key Butterworth-filter med operationsforstærkeren MCP6004 (H.FLT.001) og 
 ADS1115 ADC (H.ADC.001). PCB-designet implementerer 2-lags layout med EMI/EMC/ESD-beskyttelse (H.PCB.001) og 
 switched capacitor negativ forsyning (H.PWR.001.3).
 ==============================================================================================================================
@@ -28,13 +28,13 @@ Rapporten refererer til kravspecifikation SRS-ESR-MIL-001 version 1.00 med fuld 
 Specifikke kravkoder citeres ved relevante konstruktionsbeskrivelser.
 ------------------------------------------------------------------------------------------------------------------------------
 2.2 Operationsforstærker-konfigurationer
-Buffer: Voltage follower konfiguration med TS3V902 operationsforstærkeren (H.GEN.002)
+Buffer: Voltage follower konfiguration med MCP6004 operationsforstærkeren (H.GEN.002)
 
-Differentialforstærker: En operationsforstærker TS3V902 i differentiel forstærkerkonfiguration (H.AMP.001)
+Differentialforstærker: En operationsforstærker MCP6004 i differentiel forstærkerkonfiguration (H.AMP.001)
 
-Superdiode: To operationsforstærkere TS3V902 i præcisionshelbølgeensretter-konfiguration (H.REC.001)
+Superdiode: To operationsforstærkere MCP6004 i præcisionshelbølgeensretter-konfiguration (H.REC.001)
 
-Lavpasfilter: Operationsforstærkeren TS3V902 i Sallen-Key konfiguration (H.FLT.001)
+Lavpasfilter: Operationsforstærkeren MCP6004 i Sallen-Key konfiguration (H.FLT.001)
 ==============================================================================================================================
 §3. Faglig analyse
 ==============================================================================================================================
@@ -49,14 +49,14 @@ kontaktmodstand, hvilket er kritisk for opfyldelse af H.PRC.001 (1 mΩ opløsnin
 ______________________________________________________________________________________________________________________________
 3.2.1 DDS-generator og buffer (H.GEN.001, H.GEN.002)
 Implementeringen opfylder H.GEN.001 gennem AD9850 DDS-generator konfigureret til 100 kHz ren sinus med 0° fase og 
-frekvensstabilitet under 100 ppm. H.GEN.002 opfyldes gennem buffer implementeret med operationsforstærkeren TS3V902 i 
+frekvensstabilitet under 100 ppm. H.GEN.002 opfyldes gennem buffer implementeret med operationsforstærkeren MCP6004 i 
 voltage follower-konfiguration med multiturn præcisionspotentiometer for finjustering til 0,1V p-p ved testprobene.
 
 GIVEN: Krav om 100 kHz sinus med maksimalt 0,1V amplitude (H.SIG.001)
 SØGT: Implementering af DDS og buffer
 BEVIS/ARGUMENTATION:
 Trin 1: AD9850 DDS genererer 100 kHz digitalt (H.GEN.001)
-Trin 2: Buffer med operationsforstærkeren TS3V902 isolerer DDS fra belastning (H.GEN.002)
+Trin 2: Buffer med operationsforstærkeren MCP6004 isolerer DDS fra belastning (H.GEN.002)
 Trin 3: Potentiometer justerer amplitude til 0,1V p-p (H.GEN.002)
 KONKLUSION: Signalkæde sikrer stabilt testsignal under sikkerhedsgrænse (H.LIM.002)
 ------------------------------------------------------------------------------------------------------------------------------
@@ -65,18 +65,18 @@ H.CPL.001 opfyldes gennem 10 µF lav-ESR koblingskondensator med 10 Ω præcisio
 ledere til DUT i Kelvin-konfiguration. Denne implementering sikrer korrekt AC-kobling og eliminering af ledningsmodstand.
 ------------------------------------------------------------------------------------------------------------------------------
 3.2.3 Differentialforstærker (H.AMP.001)
-H.AMP.001 opfyldes gennem differentialforstærker implementeret med én operationsforstærker TS3V902 i differentiel 
+H.AMP.001 opfyldes gennem differentialforstærker implementeret med én operationsforstærker MCP6004 i differentiel 
 forstærkerkonfiguration med forstærkning 47× ±0,5%, CMRR >90 dB ved 100 kHz og indgangsimpedans ≥10 MΩ. 
 Denne konfiguration måler spændingsfaldet over referenceserie-modstanden med høj common-mode underdrukning.
 ------------------------------------------------------------------------------------------------------------------------------
 3.2.4 Superdiode-ensretter (H.REC.001)
-H.REC.001 opfyldes gennem superdiode-ensretter implementeret med to operationsforstærkere TS3V902 i 
+H.REC.001 opfyldes gennem superdiode-ensretter implementeret med to operationsforstærkere MCP6004 i 
 præcisionshelbølgeensretter-konfiguration med Schottky-dioder (1N5817). 
 Konfigurationen reducerer diodens spændingsfald til under 15 mV ved 100 kHz med linearitet >99,9% over dynamisk område.
 ------------------------------------------------------------------------------------------------------------------------------
 3.2.5 Lavpasfilter (H.FLT.001)
 H.FLT.001 opfyldes gennem tredjeordens Sallen-Key Butterworth aktivt filter implementeret med operationsforstærkeren 
-TS3V902 i Sallen-Key konfiguration med cutoff-frekvens 100 Hz ±1%, stopband dæmpning ≥40 dB ved 10 kHz og DC-output 
+MCP6004 i Sallen-Key konfiguration med cutoff-frekvens 100 Hz ±1%, stopband dæmpning ≥40 dB ved 10 kHz og DC-output 
 ripple under 500 µV RMS. Komponentværdier beregnes til R1=R2=R3=1,59 kΩ (1%), C1=1 µF, C2=100 nF, C3=10 nF (filmkondensatorer). 
 Udgangen af dette filter beskyttes med to Schottky-dioder (f.eks. BAT54) inden signalet føres til ADC'en: 
 Den ene diodes anode forbindes fra filterudgangen til +3.2V forsyningen, og den anden diodes katode forbindes til 
@@ -92,11 +92,11 @@ Denne implementering sikrer nødvendig opløsning for 1 mΩ måling ved 10 Ω fu
 3.3 Strømforsyningsdesign med kravreferencer
 3.3.1 Positive forsyninger (H.PWR.001.1, H.PWR.001.2, H.PWR.001.4)
 H.PWR.001.1 opfyldes gennem USB-C input med 5V @ 500 mA minimum. H.PWR.001.2 opfyldes gennem 3,3V LDO regulator til ESP32, 
-operationsforstærkere TS3V902 og ADS1115. 
+operationsforstærkere MCP6004 og ADS1115. 
 ------------------------------------------------------------------------------------------------------------------------------
 3.3.2 Negativ forsyning (H.PWR.001.3)
 H.PWR.001.3 opfyldes gennem switched capacitor konverter (ICL7660 eller tilsvarende) der genererer -5V til 
-operationsforstærkere TS3V902 for rail-to-rail operation. Decoupling med 100 nF keramisk + 10 µF tantal ved 
+operationsforstærkere MCP6004 for rail-to-rail operation. Decoupling med 100 nF keramisk + 10 µF tantal ved 
 hver IC opfylder H.PWR.001.5.
 ------------------------------------------------------------------------------------------------------------------------------
 3.3.3 Grounding (H.PWR.001.6)
@@ -148,7 +148,7 @@ Kalibreringsudstyr (T.MIS.001): Præcise referencemodstande (0,01 Ω til 10 Ω) 
 ==============================================================================================================================
 6.1 Implementeringsfaser med kravopfyldelse
 Fase 1 (Prototype): Breadboard validering af signalkæde med fokus på H.GEN.001, H.GEN.002, H.AMP.001, H.REC.001, H.FLT.001 
-implementering med TS3V902 operationsforstærkere, inklusive test af beskyttelsesdioder.
+implementering med MCP6004 operationsforstærkere, inklusive test af beskyttelsesdioder.
 
 Fase 2 (PCB-design): 2-lags PCB med EMI/ESD-beskyttelse implementerer alle H.PCB.001 krav, 
 inklusive korrekt placering af de to Schottky-beskyttelsesdioder mellem filter og ADC.
@@ -169,7 +169,7 @@ ESD og overspændingsbeskyttelse: TVS-dioder på eksterne forbindelser og Schott
 Testability (P.PCB.001.4): Inkludering af testpunkter til alle kritiske signaler, herunder på begge sider af 
 beskyttelsesdioderne mellem filter og ADC.
 
-Reparabilitet: Standard komponentpakninger (SOIC, SOT-23) fremfor BGA. (Bemærk: TS3V902 anvendes i DIP14-case, dioder i SOT-23)
+Reparabilitet: Standard komponentpakninger (SOIC, SOT-23) fremfor BGA. (Bemærk: MCP6004 anvendes i DIP14-case, dioder i SOT-23)
 
 Kalibrering: Design for nem adgang til kalibreringspotentiometer i overensstemmelse med H.GEN.002.
 ==============================================================================================================================
@@ -189,16 +189,16 @@ Kravspecifikation SRS-ESR-MIL-001 version 1.00 (reference for alle H-krav)
 ------------------------------------------------------------------------------------------------------------------------------
 7.2 Nøglekonklusioner
 Hardwarekonstruktionen implementerer fuldt alle H-krav fra kravspecifikation SRS-ESR-MIL-001 gennem veldefinerede 
-operationsforstærker-konfigurationer med TS3V902 operationsforstærkeren.
+operationsforstærker-konfigurationer med MCP6004 operationsforstærkeren.
 
-Signalkædedesignet opfylder præcisionskrav (H.PRC.001, H.PRC.002) gennem Kelvin-måling, differentiel forstærkning med TS3V902, 
+Signalkædedesignet opfylder præcisionskrav (H.PRC.001, H.PRC.002) gennem Kelvin-måling, differentiel forstærkning med MCP6004, 
 præcisionsfiltering og indbyggede Schottky-dioder til beskyttelse af ADC-indgangen mod overspændinger.
 
 PCB-designet implementerer industrielle EMI/EMC/ESD standarder (H.PCB.001) gennem 2-lags layout med korrekt grounding, 
 afskærmning og komponentplacering.
 
 Strømforsyningssystemet opfylder H.PWR.001 krav gennem stabiliseret 3,3V LDO, switched capacitor negativ forsyning til 
-TS3V902 operationsforstærkere og korrekt decoupling.
+MCP6004 operationsforstærkere og korrekt decoupling.
 
 Mekanisk design opfylder H.MEC.001 krav gennem kompakt kabinet med EM-afskærmning og kelvin-prober til præcise målinger.
 
