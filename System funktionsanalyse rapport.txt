@@ -282,6 +282,176 @@ Firmwaren opfylder 95%+ af kravspecifikationen og vil fungere optimalt på den
 beskrevne hardware med mindre justeringer til kalibreringsprocessen.
 
 ===============================================================================
+5.6 Analyse af hardwaren
+===============================================================================
+5.6.1  Omfang og præmisser
+
+Kildedokument: Hardwarekonstruktionsrapport for In‑Circuit ESR‑meter v1.00 (19‑01‑25) 
+med system‑ og netlistebeskrivelser.
+
+Faste præmisser for denne analyse:
+
+Målefrekvensen er kun 100 kHz.
+Kalibrering håndterer amplitude‑/linearitetsfejl; der kræves 
+ikke absolut analog præcision.
+Op‑amp‑kædens krav er alene: stabil ca. 47× differensforstærkning 
+samt superdiode‑ensretning, 
+der leverer DC proportionalt med AC‑amplituden.
+
+5.6.2 Funktionskæde – kort genfortalt
+
+DDS og excitationsvej: AD9850 genererer 100 kHz; signalet buffres 
+i MCP6004 og AC‑kobles via 10 µF og 
+10 Ω præcisionsserie‑modstand til DUT via Kelvin‑forbindelser. 
+Målevej: Differentialforstærker (MCP6004, nominelt 47×), 
+superdiode‑ensretter (MCP6004), 
+aktivt 3. ordens lavpas (≈100 Hz) og derefter ADS1115 til digitalisering. 
+Styring/visning: ESP32 håndterer måling og kalibrering; visning på 
+16×2 LCD (HD44780U via I²C‑interface). 
+Forsyning: USB‑C 5 V; AMS1117‑3.3 for 3,3 V; ICL7660 inverter til −5 V; 
+AGND/DGND holdes adskilt med ét forbindelsespunkt.
+
+5.6.3 Kompatibilitet ved 3,3 V logik og forsyninger
+
+ESP32‑WROOM‑32 kører nativt på 3,0–3,6 V; I/O er 3,3 V CMOS. 
+Det matcher designets 3,3 V‑bus.
+ADS1115 har VDD‑område 2,0–5,5 V og I²C‑logik følger VDD, så 3,3 V‑drift er helt OK. 
+AD9850 kan – ifølge datablad – køre på 3,3 V eller 5 V single‑supply. 
+Hvis den kører på 5 V, 
+er 3,3 V “High” fra ESP32 normalt over VIH‑tærsklen (typisk ≈0,6·VDD), 
+og grænsefladen fungerer uden level‑shifter. 
+Bruges et færdigt AD9850‑modul, skal eventuelle pull‑ups til 5 V på 
+styrelinjerne kontrolleres/fjernes.
+HD44780U‑controlleren understøtter 2,7–5,5 V logik, så 3,3 V‑styring 
+er elektrisk valid. Udfordringerne ved 3,3 V 
+handler især om kontrast og backlight (se afsnit 4), ikke om logikniveauer. 
+MCP6004 fungerer fra 1,8–6,0 V og er rail‑to‑rail I/O; det passer til 
+3,3 V logik og til dit valg med ±‑rails, 
+hvor den også får negativ margin fra −5 V. 
+
+5.6.4 Op‑amp‑kæden – vurderet efter dine præmisser
+Differentialforstærkeren (~47×)
+
+MCP6004 har GBW ≈ 1 MHz og slew‑rate ≈ 0,6 V/µs. Ved 100 kHz og en lille signalamplitude
+ (≈0,1 Vpp i dit design) 
+er disse tal tilstrækkelige til stabil, reproducerbar forstærkning, 
+selvom den effektive AC‑gain kan være lavere 
+end 47× pga. båndbredderulning. Da kalibrering alligevel bruges, 
+er kravet om nominelt 47× uproblematisk – 
+afgørende er stabilitet (ingen oscillation) og monotoni.
+
+Superdiode‑ensretteren (proportional DC)
+
+Ved 100 kHz stiller MCP6004’s slew‑rate og GBW krav om at holde signalerne 
+små, hvilket dit design gør; 
+dermed kan op‑ampen kompensere diodedrop og levere en DC‑komponent 
+proportional med AC‑amplituden. 
+Eventuel ikke‑linearitet og temperaturdrift håndteres i kalibreringen. 
+
+Konklusion for op‑amp‑kæden
+
+Under de givne præmisser er MCP6004 funktionelt egnet både til 
+differensforstærker og 
+superdiode‑ensretter i dette 100 kHz‑system, fordi du kalibrerer 
+og arbejder med små signaler.
+
+
+5.6.5 Forsyninger, støj og grænseflader – praktiske risici og afhjælpning
+AD9850 på 3,3 V vs. 5 V
+
+At køre AD9850 på 3,3 V forenkler niveau‑interfacet. Kører du på 5 V, 
+er styring fra 3,3 V normalt inden for VIH, 
+men undgå 5 V‑pull‑ups mod ESP32’s linjer (fjern eller flyt dem).
+
+Negativ rail fra ICL7660
+
+Standard ICL7660 oscillator ligger omkring 10 kHz, hvilket kan give ripple på −5 V. 
+Det kan foldes ind via ensretter/forstærker og give offset; du kan reducere 
+det med ICL7660A/‑S (højere f_SW) 
+eller ekstra RC/LC‑filtrering på −5 V rail. Funktionsmæssigt er systemet robust, 
+men lavere ripple gør udlæsningen roligere.
+
+I²C‑bus med ADS1115 og LCD‑backpack
+
+I²C er open‑drain; pull‑ups skal være til 3,3 V. Mange PCF8574/MCP23008‑backpacks
+ har indbyggede pull‑ups til deres egen VCC; 
+sikr at de ender på 3,3 V (alternativt fjern dem og brug master‑pull‑ups). 
+Det beskytter ESP32 mod 5 V på SDA/SCL og sikrer robust kommunikation. 
+
+LCD ved 3,3 V – kontrast og backlight
+
+Kontrast (V0): HD44780U kan køres på 3,3 V, men mange 16×2‑moduler har 
+kontrastnet, der forudsætter 5 V. 
+Ved 3,3 V ses ofte bleg visning. En lille negativ V0‑bias (≈ –1…–2 V) 
+eller omlægning af potmeter‑nettet løser typisk problemet. 
+Backlight: Mange moduler er modstands‑dimensioneret til 5 V. Med 3,3 V 
+bliver strøm og dermed lysstyrke lav. 
+Enten re‑dimensionér serie‑modstanden til 3,3 V eller driv baglyset fra 
+5 V via MOSFET (ESP32 styrer gate), 
+så logikken stadig er 3,3 V. 
+
+3,3 V‑LDO (AMS1117‑3.3)
+
+AMS1117 har typisk ~1,2–1,3 V dropout ved høj last. Fra 5 V er der god margin,
+ men vær opmærksom på varmeafledning, 
+især hvis backlight strømmen er høj og ESP32 har radiotoppe. 
+Brug god kobberflade/thermal‑vias og begræns baglysets strøm efter behov. 
+
+5.6.6 Funktionsverifikation i praksis (testpunkter og kriterier)
+
+DDS_OUT (TP1): 100 kHz sinus med stabil frekvens; amplitude justeres i 
+buffer‑trinnet til ≈0,1 Vpp. 
+BUF_OUT (TP2): 100 kHz, ren form, lav forvrængning; nok headroom.
+DIFF_OUT (TP5): 100 kHz amplitude, proportional med sense‑spændingen; 
+absolut niveau kan afvige fra 47× 
+men skal være stabilt (kalibreres). 
+RECT_OUT (TP6): DC‑niveau monotont med AC‑amplitude; små temperaturafvigelser 
+er acceptable (kalibrering).
+FILTER_OUT (TP7): Lav ripple (<100 Hz) og DC proportional med DUT‑ESR. 
++3,3 V/−5 V (TP8/TP9): +3,3 V inden for ±5 %; −5 V med moderat ripple
+(gerne <10–20 mV_RMS efter filtrering).
+I²C: Stabil bus ved 400 kHz; pull‑ups verificeret til 3,3 V. (Generel praksis)
+
+5.6.7 Kalibrering – lukker krav til absolut præcision
+
+Formål: Eliminere effekter af op‑amp‑gainrulning, diodedrop, offset og termisk drift.
+Foreslået metode:
+
+Nulpunktsmåling (kort DUT eller kendt lav ESR).
+Flerpunkts‑kalibrering med 0,1 Ω, 1 Ω og 10 Ω præcisionsreferencer.
+Lineær/affin fit af ADC‑tællinger til ESR, koefficienter lagres i ESP32.
+
+Resultat: Systemet kræver blot stabil og monoton analog adfærd; absolut 
+nøjagtighed leveres af kalibreringen sammen med ADS1115’s stabile digitalisering.
+
+
+5.6.8 EMC/ESD og layout – funktionsmæssigt
+
+Separat AGND/DGND med enkelt forbindelsespunkt, guarding omkring analoge spor, 
+TVS på eksterne forbindelser og Schottky‑klemmer ved ADC‑indgang er hensigtsmæssigt 
+og styrker robustheden. 
+
+5.6.9 Åbne punkter og anbefalede småjusteringer
+
+Overvej ICL7660A/‑S eller ekstra RC/LC‑filter for at reducere −5 V‑ripple. 
+Sikr at LCD‑backpackens pull‑ups ender på 3,3 V, ikke 5 V. 
+Tilføj negativ V0 (≈ −1…−2 V) eller justér kontrast‑net for tydelig visning ved 3,3 V; 
+tilpas/back‑drive backlight for ønsket lysstyrke.
+Hold øje med AMS1117‑termik og begræns backlight‑strømmen, hvis regulatoren bliver varm. 
+Hvis AD9850 bruges som modul, verificér fravær af 5 V‑pull‑ups på styrelinjer ind mod 
+ESP32. 
+
+
+5.6.10 Endelig funktionskonklusion
+
+Med arbejdet fast på 100 kHz og kalibrering som nøjagtighedsmekanisme er den beskrevne 
+hardware funktionelt egnet.
+MCP6004 leverer den nødvendige stabile differensforstærkning og en proportional 
+superdiode‑DC‑udgang  ved små signaler; eventuelle afvigelser i 
+absolut gain/lineæritet fjernes i kalibreringen. 
+Praktiske forhold omkring −5 V‑ripple og LCD‑kontrast/backlight ved 3,3 V 
+har enkle, velkendte  afhjælpninger og påvirker ikke den grundlæggende funktionalitet. 
+
 ===============================================================================
 1. ER DE MANGLENDE FUNKTIONER PROBLEMATISKE?
 ===============================================================================
@@ -315,7 +485,8 @@ Hvad driver egentlig i et ESR-meter?
 Komponenter der IKKE driver signifikant:
   - Præcisionsmodstande (0.1%, metal film): Negligeabel drift (<50 ppm/år)
   - AD9850 DDS-generator: Kvartsstyret, ekstremt stabil
-  - Keramiske kondensatorer i signalvejen: Minimal drift ved korrekt spændingsrating
+  - Keramiske kondensatorer i signalvejen: Minimal drift ved korrekt 
+    spændingsrating
 
 Komponenter der KAN drive:
   - ADS1115 ADC ⚠️
