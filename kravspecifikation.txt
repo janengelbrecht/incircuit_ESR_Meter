@@ -64,6 +64,7 @@ P: Produktionskrav (P.xxx.xxx)
 3.1 Hardwarekonstruktionskrav
 ------------------------------------------------------------------------------------------------------------------------------
 H.GEN.001: DDS-generator
+------------------------------------------------------------------------------------------------------------------------------
 Komponent: AD9850 125 MHz DDS synthesizer
 
 Konfiguration: 100 kHz ren sinus, 0° fase
@@ -75,6 +76,7 @@ Interface: Parallelt eller serielt (konfigurerbart)
 Forsyning: 5V ±5%
 
 H.GEN.002: Buffer og attenuator
+------------------------------------------------------------------------------------------------------------------------------
 Buffer: Rail-to-rail opamp i voltage follower
 
 Potentiometer: Multiturn præcisions, 10-omdrejninger
@@ -82,6 +84,7 @@ Potentiometer: Multiturn præcisions, 10-omdrejninger
 Maksimal udgang: 0,1V p-p ved testprobene
 
 H.CPL.001: AC-kobling og spændingsdeler
+------------------------------------------------------------------------------------------------------------------------------
 Koblingskondensator: 10 µF lav-ESR, 50V minimum
 
 Præcisionsmodstand: Præcisionsmodstand: 10 Ω ±0,1%, temperaturkoefficient <25 ppm/°C (foretrukken) eller <50 ppm/°C (minimum).
@@ -95,12 +98,14 @@ Bourns PWR247T-10 (tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
 
 Yageo RTxx (præcisions tyndfilm) – TC <25 ppm/°C, tolerance ±0,1%.
 
-Ved at vælge en modstand med TC <25 ppm/°C (eller lavere) sikres, at modstandsvariationen over det angivne temperaturinterval (15–25°C) 
-holdes under 0,025%, hvilket er ubetydeligt i forhold til systemets samlede nøjagtighed på ≤5%.
+Ved at vælge en modstand med TC <25 ppm/°C (eller lavere) sikres, at modstandsvariationen over det angivne 
+temperaturinterval (15–25°C) holdes under 0,025%, hvilket er ubetydeligt i forhold til systemets samlede nøjagtighed på ≤5%.
 
 Kelvin-tilslutning: Fire separate ledere til DUT
+------------------------------------------------------------------------------------------------------------------------------
 
 H.AMP.001: Differentialforstærker
+------------------------------------------------------------------------------------------------------------------------------
 Forstærkning: 47x ±0,5%
 
 Opamp: Rail-to-rail, lavstøj, CMRR >90 dB @ 100 kHz
@@ -110,6 +115,7 @@ Båndbredde: ≥1 MHz ved forstærkning 47
 Indgangsimpedans: ≥10 MΩ
 
 H.REC.001: Præcisionsensretter
+------------------------------------------------------------------------------------------------------------------------------
 Topologi: Superdiode med to rail-to-rail opamps
 
 Dioder: Schottky-dioder (1N5817 eller tilsvarende)
@@ -119,6 +125,7 @@ Spændingsfald: <15 mV @ 100 kHz
 Linearitet: >99,9% over dynamisk område
 
 H.FLT.001: Lavpasfilter
+------------------------------------------------------------------------------------------------------------------------------
 Type: 3. ordens Sallen-Key Butterworth aktivt filter
 
 Cutoff-frekvens (fc): 100 Hz ±1%
@@ -138,6 +145,7 @@ R1 = R2 = R3 = 1,59 kΩ (1% tolerance)
 C1 = 1 µF, C2 = 100 nF, C3 = 10 nF (filmkondensatorer)
 
 H.ADC.001: Analog-til-digital konvertering
+------------------------------------------------------------------------------------------------------------------------------
 Konverter: ADS1115 16-bit ΔΣ ADC
 
 PGA-indstillinger: 4x, 8x, 16x forstærkning
@@ -149,6 +157,7 @@ Interface: I2C @ 400 kHz
 Sample rate: 860 SPS maksimum
 
 H.MCU.001: Mikrokontroller og periferi
+------------------------------------------------------------------------------------------------------------------------------
 Processor: ESP32-WROOM-32
 
 Display: 16x2 LCD med I2C backpack (Adafruit kompatibel)
@@ -158,6 +167,7 @@ Knapper: 2x taktile med intern pull-up
 Seriel interface: USB-C til seriel konverter
 
 H.PWR.001: Strømforsyningssystem
+------------------------------------------------------------------------------------------------------------------------------
 H.PWR.001.1: Input: USB-C 5V @ 500 mA minimum
 
 H.PWR.001.2: Hovedregulator: 3,3V LDO @ 300 mA (ESP32, opamps, ADS1115)
@@ -170,8 +180,9 @@ H.PWR.001.4: Levelkonverter: Valgt fra da AD9850 fint kan køre 3,3V(fordi vi ku
 H.PWR.001.5: Decoupling: 100 nF keramisk + 10 µF tantal ved hver IC
 
 H.PWR.001.6: AGND/DGND: Separate stjerner med enkelt forbindelsespunkt
-
+------------------------------------------------------------------------------------------------------------------------------
 H.PCB.001: Printpladedesign
+------------------------------------------------------------------------------------------------------------------------------
 H.PCB.001.1: Lag: 2-lags FR-4, 1,6 mm tykkelse
 
 H.PCB.001.2: Spor/rum: Minimum 0,2 mm/0,2 mm for signal
@@ -185,8 +196,9 @@ H.PCB.001.5: ESD-beskyttelse: TVS-dioder på alle eksterne forbindelser
 H.PCB.001.6: Routing: Analog og digital separation med 5 mm minimum afstand
 
 H.PCB.001.7: Probeforbindelser: Gulvstående 4-pol Kelvin-socket
-
+------------------------------------------------------------------------------------------------------------------------------
 H.MEC.001: Mekanisk design
+------------------------------------------------------------------------------------------------------------------------------
 H.MEC.001.1: Kabinet: ABS plast med EM-afskærmning
 
 H.MEC.001.2: Prober: 4x isolerede kelvin-prober med spidse tip
@@ -198,6 +210,7 @@ H.MEC.001.4: Dimensioner: Maksimalt 100x150x50 mm
 3.2 Softwarekonstruktionskrav
 ------------------------------------------------------------------------------------------------------------------------------
 S.ARC.001: Overordnede arkitekturkrav
+------------------------------------------------------------------------------------------------------------------------------
 S.ARC.001.1: Sprog: Arduino C++ (C++14 kompatibel)
 
 S.ARC.001.2: Udviklingsmiljø: Arduino IDE 2.x eller PlatformIO
@@ -209,6 +222,7 @@ S.ARC.001.4: Filstruktur: En .ino fil med alle moduler
 S.ARC.001.5: Hukommelse: Statisk allokering, ingen malloc/free
 
 S.HAL.001: Hardware Abstraction Layer
+------------------------------------------------------------------------------------------------------------------------------
 S.HAL.001.1: hal_ad9850: DDS-kontrol (frekvens, amplitude, fase)
 
 S.HAL.001.2: hal_ads1115: ADC-læsning og PGA-kontrol
@@ -220,6 +234,7 @@ S.HAL.001.4: hal_buttons: Knapaflæsning med debounce (statemaskine)
 S.HAL.001.5: hal_serial: Seriel kommunikationsinitialisering
 
 S.ADC.001: ADC-målingssystem
+------------------------------------------------------------------------------------------------------------------------------
 S.ADC.001.1: adc_read_single(): Enkeltmåling med specificeret PGA
 
 S.ADC.001.2: adc_read_oversampled(): 64x oversampling + middling
@@ -229,6 +244,7 @@ S.ADC.001.3: adc_auto_range(): Automatisk PGA-valg baseret på signalstyrke
 S.ADC.001.4: adc_calibrate(): Kalibreringsrutine (kræver genprogrammering)
 
 S.ESR.001: ESR-beregningsmodul
+------------------------------------------------------------------------------------------------------------------------------
 S.ESR.001.1: Datastruktur: ESR_tables[3][30] i PROGMEM
 
 S.ESR.001.2: esr_get_table_index(): Returner tabel baseret på PGA
@@ -238,6 +254,7 @@ S.ESR.001.3: esr_interpolate(): Lineær interpolation mellem tabelværdier
 S.ESR.001.4: esr_calculate(): Hovedberegningsfunktion med validering
 
 S.DSP.001: Display og brugergrænseflade
+------------------------------------------------------------------------------------------------------------------------------
 S.DSP.001.1: Tilstande: STATE_RAW_ADC og STATE_ESR_RESULT
 
 S.DSP.001.2: display_init(): LCD-initialisering
@@ -249,6 +266,7 @@ S.DSP.001.4: display_esr_result(): Vis ESR, PGA og ADC-værdi
 S.DSP.001.5: display_update(): Opdater baseret på tilstand
 
 S.SCP.001: SCPI-kommunikationsmodul
+------------------------------------------------------------------------------------------------------------------------------
 S.SCP.001.1: Kommandoer: *IDN?, MEASure:ESR?, SYSTem:PRESet, DISPlay:MODE, 
              SYSTem:COMMunication
 
@@ -259,6 +277,7 @@ S.SCP.001.3: scpi_execute(): Udfør kommandoer
 S.SCP.001.4: scpi_response(): Send svar (maks. 100 ms respons)
 
 S.WDG.001: Watchdog og fejlhåndtering
+------------------------------------------------------------------------------------------------------------------------------
 S.WDG.001.1: Hardware watchdog: ESP32 indbygget watchdog (timeout 3 sekunder)
 
 **S.WDG.001.2:wdg_reset(): Reset watchdog i main loop
@@ -268,6 +287,7 @@ S.WDG.001.3: Fejllogging: Log fejl til seriel port med tidsstempel
 S.WDG.001.4: System reset: Automatisk reset ved kritisk fejl
 
 S.PER.001: Ydeevnekrav
+------------------------------------------------------------------------------------------------------------------------------
 S.PER.001.1: Målecyklus: ≤100 ms (inklusive oversampling)
 
 S.PER.001.2: Display opdatering: ≤50 ms
@@ -279,11 +299,13 @@ S.PER.001.4: Knaprespons: ≤20 ms
 3.3 Dokumentationskrav
 ------------------------------------------------------------------------------------------------------------------------------
 D.GEN.001: Generel dokumentation
+------------------------------------------------------------------------------------------------------------------------------
 D.GEN.001.1: Tekstsprog: Formfuldendt dansk med korrekt retskrivning
 
 D.GEN.001.2: Struktur: Logisk opdeling i afsnit med nummerering
 
 D.COD.001: Kodedokumentation
+------------------------------------------------------------------------------------------------------------------------------
 D.COD.001.1: Linjekommentarer: Alle kodelinier efterfølges af //-kommentar
 
 D.COD.001.2: Funktionskommentarer: Doxygen-formateret blok før hver funktion
@@ -293,6 +315,7 @@ D.COD.001.3: Modulbeskrivelse: Kommentarblok i hvert moduls start
 D.COD.001.4: Variabeldokumentation: Alle globale variabler dokumenteres
 
 D.DOX.001: Doxygen-specifikke krav
+------------------------------------------------------------------------------------------------------------------------------
 D.DOX.001.1: Bruge alle relevante Doxygen-kommandoer: @brief, @param, @return, @note, @warning, @see
 
 D.DOX.001.2: Generere HTML og PDF dokumentation
@@ -300,6 +323,7 @@ D.DOX.001.2: Generere HTML og PDF dokumentation
 D.DOX.001.3: Inkludere flowdiagrammer for komplekse algoritmer
 
 D.TEC.001: Teknisk dokumentation
+------------------------------------------------------------------------------------------------------------------------------
 D.TEC.001.1: Skematisk diagram: Fuldt annoteret med komponentværdier
 
 D.TEC.001.2: BOM: Komplet komponentliste med leverandøroplysninger
@@ -311,6 +335,7 @@ D.TEC.001.4: Kalibreringsvejledning: Trin-for-trin procedure
 3.4 Testkrav
 ------------------------------------------------------------------------------------------------------------------------------
 T.UNT.001: Modultests
+------------------------------------------------------------------------------------------------------------------------------
 T.UNT.001.1: HAL-moduler: Test hver driver isoleret
 
 T.UNT.001.2: ADC-modul: Test oversampling og PGA-skift
@@ -320,6 +345,7 @@ T.UNT.001.3: ESR-modul: Test interpolation med kendte værdier
 T.UNT.001.4: SCPI-modul: Test alle kommandoer og fejltilstande
 
 T.INT.001: Integrationstests
+------------------------------------------------------------------------------------------------------------------------------
 T.INT.001.1: Hardware/software integration: Test komplet målekæde
 
 T.INT.001.2: Display-integration: Test alle visningstilstande
@@ -327,6 +353,7 @@ T.INT.001.2: Display-integration: Test alle visningstilstande
 T.INT.001.3: SCPI-integration: Test seriel kommunikation ende-til-ende
 
 T.SYS.001: Systemtests
+------------------------------------------------------------------------------------------------------------------------------
 T.SYS.001.1: Præcisionstest: Mål kendte modstande (0,1 Ω til 10 Ω)
 
 T.SYS.001.2: In-circuit test: Test på printplade med parallelle komponenter
@@ -336,6 +363,7 @@ T.SYS.001.3: Temperaturtest: Karakterisér drift over 15-25°C
 T.SYS.001.4: Strømforbrugstest: Mål strømforbrug i alle tilstande
 
 T.ACC.001: Accepttests
+------------------------------------------------------------------------------------------------------------------------------
 T.ACC.001.1: Præcision: Verificér 5% nøjagtighed over hele området
 
 T.ACC.001.2: Opløsning: Verificér 1 mΩ opløsning
@@ -343,9 +371,11 @@ T.ACC.001.2: Opløsning: Verificér 1 mΩ opløsning
 T.ACC.001.3: Sikkerhed: Verificér maksimalt 0,1V p-p testsignal
 
 T.ACC.001.4: Robusthed: Test ESD- og EMI-immunitet
-
+------------------------------------------------------------------------------------------------------------------------------
 3.5 Produktionskrav
+------------------------------------------------------------------------------------------------------------------------------
 P.PCB.001: PCB-produktion
+------------------------------------------------------------------------------------------------------------------------------
 P.PCB.001.1: Materiale: FR-4, 1,6 mm, 1 oz kobber
 
 P.PCB.001.2: Overfladebehandling: HASL eller ENIG
@@ -355,6 +385,7 @@ P.PCB.001.3: Sølvmaskering: Over alle udsatte kobberflader
 P.PCB.001.4: Testpoint: Inkluder testpunkter til alle kritiske signaller
 
 P.ASS.001: Sammensætning
+------------------------------------------------------------------------------------------------------------------------------
 P.ASS.001.1: Loddeproces: Bølgelodning eller håndlodning
 
 P.ASS.001.2: Inspektion: Visuel inspektion efter IPC-A-610 klasse 2
@@ -362,6 +393,7 @@ P.ASS.001.2: Inspektion: Visuel inspektion efter IPC-A-610 klasse 2
 P.ASS.001.3: Rensing: Fjern fluxrester efter lodning
 
 P.TST.001: Produktionstest
+------------------------------------------------------------------------------------------------------------------------------
 P.TST.001.1: In-circuit test: Test alle komponentforbindelser
 
 P.TST.001.2: Funktionstest: Test komplet systemfunktionalitet
@@ -369,6 +401,7 @@ P.TST.001.2: Funktionstest: Test komplet systemfunktionalitet
 P.TST.001.3: Kalibrering: Indledende kalibrering med referencemodstande
 
 P.QUAL.001: Kvalitetskrav
+------------------------------------------------------------------------------------------------------------------------------
 P.QUAL.001.1: Fejlrate: <1% ved sluttest
 
 P.QUAL.001.2: Dokumentation: Fuldt dokumenteret produktionsproces
@@ -572,12 +605,15 @@ Forventet energiforbrug: <1W i standby, <3W under drift (E.ENV.001.5)
 ==============================================================================================================================
 H.UNC.001: Signalintegritet: 5% præcision forudsætter optimal PCB-layout med korrekt grounding og afskærmning. 
 Afvigelser kan påvirke nøjagtigheden med op til 2%.
+------------------------------------------------------------------------------------------------------------------------------
 
 H.UNC.002: Komponenttolerance: Samlet nøjagtighed afhænger af præcisionsmodstandens tolerance (<0,1%) og 
 temperaturkoefficient (<50 ppm/°C).
+------------------------------------------------------------------------------------------------------------------------------
 
 S.UNC.001: Software linearitet: Interpolationsnøjagtigheden antager lineært respons mellem tabelpunkterne. 
 Reelt respons kan afvige med op til 0,5%.
+------------------------------------------------------------------------------------------------------------------------------
 
 H.UNC.003: In-circuit påvirkning: Parallelle impedanser i testet kredsløb kan påvirke målingen. 
 Påvirkningen er ukvantificerbar uden kendskab til det specifikke kredsløb.
@@ -586,12 +622,16 @@ Påvirkningen er ukvantificerbar uden kendskab til det specifikke kredsløb.
 ==============================================================================================================================
 H.MIS.001: Specifikke komponentmodeller: Opamp-modeller, potentiometertype, Schottky-dioder, 
 switched capacitor IC, LDO-regulator.
+------------------------------------------------------------------------------------------------------------------------------
 
 H.MIS.002: PCB-layout detaljer: Specifik routing, komponentplacering, guard ring design.
+------------------------------------------------------------------------------------------------------------------------------
 
 T.MIS.001: Kalibreringsudstyr: Præcise referencemodstande (0,01 Ω til 10 Ω) med dokumenteret nøjagtighed.
+------------------------------------------------------------------------------------------------------------------------------
 
 D.MIS.001: Testprotokoller: Detaljerede procedure for hver testtype.
+------------------------------------------------------------------------------------------------------------------------------
 
 P.MIS.001: Produktionsdokumentation: Manufacturing files (Gerber, drill, pick-and-place).
 ==============================================================================================================================
@@ -632,14 +672,20 @@ Kalibrering: Dokumenteret procedure med 6-måneders interval
 ==============================================================================================================================
 7.1 Referencekrav
 H.REF.001: AD9850 Datasheet, Analog Devices
+------------------------------------------------------------------------------------------------------------------------------
 
 H.REF.002: ADS1115 Datasheet, Texas Instruments
+------------------------------------------------------------------------------------------------------------------------------
 
 H.REF.003: ESP32 Technical Reference Manual
+------------------------------------------------------------------------------------------------------------------------------
 
 S.REF.001: Arduino Language Reference
+------------------------------------------------------------------------------------------------------------------------------
 
 D.REF.001: Doxygen Manual
+------------------------------------------------------------------------------------------------------------------------------
 
 T.REF.001: IPC-A-610 Acceptability of Electronic Assemblies
+------------------------------------------------------------------------------------------------------------------------------
 
