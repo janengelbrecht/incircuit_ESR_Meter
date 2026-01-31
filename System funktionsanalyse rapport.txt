@@ -1,18 +1,18 @@
-===============================================================================
-|									      |
-|                     SYSTEMFUNKTIONSANALYSE				      |
-|                                                			      |
-===============================================================================
-| DOKUMENT ID:	SYS-ESR-MIL-001						      |
-| DATO:		19-01-25						      |
-| VERSION:	1.00							      |
-| SYSTEM:	INCIRCUIT ESR METER			                      |
-| FORFATTER:	Jan Engelbrecht Pedersen				      |
-===============================================================================
+=========================================================================================
+|									                |
+|                               SYSTEMFUNKTIONSANALYSE				        |
+|                                                			                |
+=========================================================================================
+| DOKUMENT ID:	SYS-ESR-MIL-001						      		|
+| DATO:		19-01-25						      		|
+| VERSION:	1.00							      		|
+| SYSTEM:	INCIRCUIT ESR METER			                      		|
+| FORFATTER:	Jan Engelbrecht Pedersen				      		|
+=========================================================================================
 
-===============================================================================
+=========================================================================================
 1.  DOKUMENTATIONSNIVEAU OG -KVALITET
-===============================================================================
+=========================================================================================
 
 Projektets dokumentation demonstrerer et exceptionelt højt og professionelt
 niveau, der opfylder og ofte overgår industrielle standarder.
@@ -45,9 +45,9 @@ Dokumentationen er på laboratorie- eller industriniveau. Dens dybde, struktur
 og sporbarhed understøtter udvikling i regulerede industrier. En enkelt
 signifikant mangler er fuldt udviklede testprotokoller.
 
-===============================================================================
+=========================================================================================
 2.  TEKNOLOGINIVEAU OG MÅLGRUPPEEGNETHED
-===============================================================================
+=========================================================================================
 
 Systemets teknologi er en blanding av avancerede, professionelle teknikker og
 bevidste forenklinger.
@@ -92,9 +92,9 @@ Systemet er primært egnet til professionelt/servicetekniker-brug og
 laboratoriemiljøer. Kernemålefunktionen er solid og professionel.
 Forenklingerne placerer produktet i den høje ende af hobby/prosumer-markedet.
 
-===============================================================================
+=========================================================================================
 3.  VURDERING AF KOMMERCIALISERINGSPOTENTIALE
-===============================================================================
+=========================================================================================
 
 Projektet besidder betydeligt kommercialiseringspotentiale i niche- og
 specialmarkeder. En SWOT-analyse sammenfatter positionen.
@@ -143,9 +143,9 @@ en investering på 6-12 måneder for at adressere svaghederne, har det et klart
 potentiale for at blive et konkurrencedygtigt produkt i sit nichemarked. Den
 højkvalitetsdokumentation er et af dets mest værdifulde aktiver.
 
-===============================================================================
+=========================================================================================
 4.  FIRMWARE COMPILERING I ARDUINO IDE
-===============================================================================
+=========================================================================================
 
 4.1 Kompileringsstatus
 
@@ -194,9 +194,9 @@ Konklusion Kompilering:
 Firmwaren er fuldt kompilerbar med de rette værktøjer og biblioteker. Ingen
 kritiske fejl forventes ved korrekt opsætning.
 
-===============================================================================
+=========================================================================================
 5.  HARDWAREKOMPATIBILITET OG FUNKTION
-===============================================================================
+=========================================================================================
 
 5.1 Fuldt Implementeret Hardwarekompatibilitet
 
@@ -281,9 +281,9 @@ Konklusion Hardwarekompatibilitet:
 Firmwaren opfylder 95%+ af kravspecifikationen og vil fungere optimalt på den
 beskrevne hardware med mindre justeringer til kalibreringsprocessen.
 
-===============================================================================
+=========================================================================================
 5.6 Analyse af hardwaren
-===============================================================================
+=========================================================================================
 5.6.1  Omfang og præmisser
 
 Kildedokument: Hardwarekonstruktionsrapport for In‑Circuit ESR‑meter v1.00 (19‑01‑25) 
@@ -452,9 +452,9 @@ absolut gain/lineæritet fjernes i kalibreringen.
 Praktiske forhold omkring −5 V‑ripple og LCD‑kontrast/backlight ved 3,3 V 
 har enkle, velkendte  afhjælpninger og påvirker ikke den grundlæggende funktionalitet. 
 
-===============================================================================
+=========================================================================================
 1. ER DE MANGLENDE FUNKTIONER PROBLEMATISKE?
-===============================================================================
+=========================================================================================
 SCPI (Minimalt implementeret)
 Vurdering: IKKE PROBLEMATISK
 
@@ -477,9 +477,9 @@ Vurdering: DETTE ER PROBLEMATISK ⚠️
 
   Dette kræver dybere analyse:
 
-===============================================================================
+=========================================================================================
 2. KALIBRERINGSPROBLEMATIKKEN - KRITISK ANALYSE
-===============================================================================
+=========================================================================================
 Hvad driver egentlig i et ESR-meter?
 
 Komponenter der IKKE driver signifikant:
@@ -505,18 +505,18 @@ Komponenter der KAN drive:
       Dette er MEST KRITISK: Direkte fejlkilde i målingen
       En oxideret probe kan tilføje 0.1-0.5 Ω offset
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
 Fabrikskalibrering - Er det nok?
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
 NEJ, desværre ikke på lang sigt:
 
 +-------------------+------------+----------------+--------------------------+
-| Faktor            | Tidshorisont| Påvirkning     | Kræver rekalibrering?    |
+| Faktor            |Tidshorisont| Påvirkning     | Kræver rekalibrering?    |
 +-------------------+------------+----------------+--------------------------+
 | ADC gain-drift    | 2-5 år     | 0.1-0.3% fejl  | Nej (inden for spec)     |
 | ADC offset-drift  | 2-5 år     | ±50 µV         | Nej (negligeabel)        |
 | Op-amp drift      | 3-7 år     | 0.2-0.5% fejl  | Måske                    |
-| Probe-slidtage    | 6-12 mdr   | 0.1-1.0 Ω fejl | JA ⚠️⚠️⚠️                |
+| Probe-slidtage    | 6-12 mdr   | 0.1-1.0 Ω fejl | JA ⚠️⚠️⚠️              |
 | Temperaturændring | Dagligt    | 0.5-2% fejl    | Nej (men komp. ønskeligt)|
 +-------------------+------------+----------------+--------------------------+
 
@@ -528,9 +528,9 @@ Det Reelle Problem:
     - Forurening med flusmiddel/snavs
   Dette kan IKKE løses med én fabrikskalibrering.
 
-===============================================================================
+=========================================================================================
 3. HVAD VIL HOBBYFOLK/TEKNIKERE SAVNE?
-===============================================================================
+=========================================================================================
 Kritiske mangler:
   A) Enkel rekalibrering uden PC ⚠️⚠️⚠️
      Scenarie: En servicetekniker bemærker at måleren viser 0.15 Ω på en kendt
@@ -564,9 +564,9 @@ Mindre vigtige mangler:
   - Avanceret SCPI: Kun for automatisering
   - Statistik-display: Nice to have, ikke kritisk
 
-===============================================================================
+=========================================================================================
 4. KONKRETE ANBEFALINGER
-===============================================================================
+=========================================================================================
 Minimal løsning (acceptabel for hobby):
   Pris: 0 timer ekstra udvikling
   Resultat: Fungerer, men kræver PC for rekalibrering
@@ -589,9 +589,9 @@ Professional løsning (optimal):
   + Estimeret udvikling: 1-2 dage
   + Gevinst: Produktionsklar
 
-===============================================================================
+=========================================================================================
 5. DIREKTE SVAR PÅ DINE SPØRGSMÅL
-===============================================================================
+=========================================================================================
 Q1: Er manglende funktioner problematiske?
 +---------------------+-------------+-------------------+----------------------+
 | Funktion            | Hobbybrug   | Serviceværksted   | Kritikalitet         |
@@ -629,9 +629,9 @@ Q4: Vil brugerne savne noget?
     ⭐ Data skal gemmes i NVS/Flash
      Dette er dokumenteret som den største reelle svaghed i systemet.
 
-===============================================================================
-6. MIN ANBEFALING
-===============================================================================
+=========================================================================================
+6. ANBEFALING
+=========================================================================================
 For hobbybrug: Firmwaren er 100% acceptabel som den er.
 For serviceværksteder: Tilføj kun denne ene feature:
 
@@ -654,4 +654,4 @@ Dette tager 2 timers arbejde og løser 90% af problemet.
 
 Konklusion: Firmwaren er fremragende til hobbybrug, men kritisk mangel for
 professionel brug er zero-kalibrering uden PC. Alle andre "mangler" er sekundære.
-===============================================================================
+=========================================================================================
