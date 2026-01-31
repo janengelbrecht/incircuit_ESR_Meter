@@ -617,6 +617,17 @@ Q4: Vil brugerne savne noget?
       ⚠️⚠️⚠️ Zero-kalibrering uden PC (KRITISK)
       ⚠️⚠️ Temperaturkompensation (vigtig)
       ⚠️ Gennemsnit af målinger (nyttigt)
+    Kalibrering er absolut nødvendig i dette ESR‑meter, fordi:
+    ✔ Proberne oxiderer og slides – største fejlkilde (0.1–1 Ω fejl)
+    ✔ Temperaturdrift forskyder gain‑forhold og resistorer
+    ✔ Opamp‑offset ændres over måneder/år
+    ✔ ADC‑gain driver langsomt
+    ✔ Fabrikskalibrering kan IKKE modstå disse effekter i real drift
+    Og derfor:
+    ⭐ Kalibrering SKAL kunne foretages fra menuen uden firmware‑rekompilering
+    ⭐ Der skal implementeres ZERO‑kalibrering samt multi‑punkt kalibrering
+    ⭐ Data skal gemmes i NVS/Flash
+     Dette er dokumenteret som den største reelle svaghed i systemet.
 
 ===============================================================================
 6. MIN ANBEFALING
