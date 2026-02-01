@@ -239,7 +239,7 @@ Kravspec: SRS-ESR-MIL-001
    FQ_UD      AD9850_FQ_UD                   Frequency update. Fra ESP32 GPIO17
    DATA       AD9850_DATA                    Serial data input. Fra ESP32 GPIO18
    RESET      AD9850_RESET                   Reset input. Fra ESP32 GPIO19
-   VCC        +5V                            Strømforsyning fra USB-C input.
+   VCC        +3.3V                          Strømforsyning fra LDO
    DGND       DGND                           Digital ground.
    AGND       AGND                           Analog ground.
    OUT        DDS_OUT                        Analog output: 100 kHz sinus, ~0.1V p-p efter buffer.
