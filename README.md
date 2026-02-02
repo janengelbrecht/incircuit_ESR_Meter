@@ -67,16 +67,16 @@ Core Components
 MCU: ESP32-WROOM-32 (WiFi/Bluetooth capable)
 DDS Generator: AD9850 for precise 100 kHz sine wave
 ADC: ADS1115 16-bit ΔΣ ADC with programmable gain (4×, 8×, 16×)
-OpAmps: TS3V902 rail-to-rail CMOS operational amplifiers
+OpAmps: MCP6004 rail-to-rail CMOS operational amplifiers
 Display: 16×2 LCD with I2C backpack
 Power: USB-C input with +3.3V LDO and -5V switched capacitor converter
 
 Circuit Architecture
 
-Signal Generation: AD9850 DDS → Buffer (TS3V902 voltage follower)
+Signal Generation: AD9850 DDS → Buffer (MCP6004 voltage follower)
 Measurement Circuit: 10 μF coupling capacitor + 10 Ω precision reference resistor
-Differential Amplification: 47× gain differential amplifier (TS3V902)
-Rectification: Precision superdiode full-wave rectifier (2× TS3V902 + Schottky diodes)
+Differential Amplification: 47× gain differential amplifier (MCP6004)
+Rectification: Precision superdiode full-wave rectifier (2× MCP6004 + Schottky diodes)
 Filtering: 3rd-order Sallen-Key Butterworth low-pass filter (100 Hz cutoff)
 ADC Protection: Schottky clamping diodes before ADS1115 input
 Kelvin Connections: 4-pin isolated probe connections
@@ -282,3 +282,4 @@ Component manufacturers for high-quality parts and documentation
 Open-source community for inspiration and reference designs
 
 Test equipment manufacturers whose instruments provided validation references
+
