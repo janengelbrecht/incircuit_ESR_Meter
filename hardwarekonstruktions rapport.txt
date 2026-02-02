@@ -1,13 +1,13 @@
 ==============================================================================================================================
-|															     |
-|			Hardwarekonstruktionsrapport for In-Circuit ESR-meter						     |
-|															     |
+|															     															 |
+|			Hardwarekonstruktionsrapport for In-Circuit ESR-meter						     								 |
+|															     															 |
 ==============================================================================================================================
-| DOKUMENT ID:	HWKONS-ESR-MIL-001											     |
-| DATO:		19-01-25												     |
-| VERSION:	1.00													     |
-| SYSTEM:	INCIRCUIT ESR METER											     |
-| FORFATTER:	Jan Engelbrecht Pedersen										     |
+| DOKUMENT ID:	HWKONS-ESR-MIL-001											    											 |
+| DATO:		19-01-25												    													 |
+| VERSION:	1.00													    													 |
+| SYSTEM:	INCIRCUIT ESR METER											    												 |
+| FORFATTER:	Jan Engelbrecht Pedersen										   										 	 |
 ==============================================================================================================================
 §1. Præcis sammenfatning
 ==============================================================================================================================
