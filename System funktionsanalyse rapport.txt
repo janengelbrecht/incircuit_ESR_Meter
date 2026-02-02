@@ -336,7 +336,7 @@ MCP6004 har GBW ≈ 1 MHz og slew‑rate ≈ 0,6 V/µs. Ved 100 kHz og en 
  (≈0,1 Vpp i dit design) 
 er disse tal tilstrækkelige til stabil, reproducerbar forstærkning, 
 selvom den effektive AC‑gain kan være lavere 
-end 47× pga. båndbredderulning. Da kalibrering alligevel bruges, 
+end 47× pga. båndbreddeafrulning. Da kalibrering alligevel bruges, 
 er kravet om nominelt 47× uproblematisk – 
 afgørende er stabilitet (ingen oscillation) og monotoni.
 
