@@ -141,7 +141,7 @@ Konklusion på Kommercialisering:
 Projektet er velegnet til kommercialisering som et specialiseret værktøj. Med
 en investering på 6-12 måneder for at adressere svaghederne, har det et klart
 potentiale for at blive et konkurrencedygtigt produkt i sit nichemarked. Den
-højkvalitetsdokumentation er et af dets mest værdifulde aktiver.
+høje kvalitet af dokumentationen er et af projektets mest værdifulde aktiver.
 
 =========================================================================================
 4.  FIRMWARE COMPILERING I ARDUINO IDE
